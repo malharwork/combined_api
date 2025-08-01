@@ -11,6 +11,7 @@ import base64
 from flask_cors import CORS
 from PIL import Image
 from difflib import SequenceMatcher
+import re
 
 load_dotenv()
 
@@ -796,28 +797,177 @@ def handle_disease_detection(language):
            status=422
        )
 
+def extract_commodity_from_text(text, commodity_list=None):
+    """
+    Extracts the commodity name from the text using a list of known commodities.
+    If commodity_list is None, uses a default set of common commodities.
+    Returns the matched commodity or None.
+    """
+    if commodity_list is None:
+        commodity_list = [
+            'tomato', 'potato', 'onion', 'wheat', 'rice', 'cotton', 'groundnut', 'bajra', 'maize', 'chili',
+            'garlic', 'ginger', 'cabbage', 'cauliflower', 'brinjal', 'okra', 'spinach', 'carrot', 'peas',
+            'banana', 'mango', 'apple', 'pomegranate', 'coriander', 'cumin', 'mustard', 'soybean', 'turmeric',
+            'sugarcane', 'jowar', 'moong', 'urad', 'masoor', 'gram', 'sesame', 'sunflower', 'linseed', 'barley',
+            'guar', 'castor', 'fenugreek', 'papaya', 'lemon', 'orange', 'grapes', 'watermelon', 'muskmelon',
+            'coconut', 'betel', 'arecanut', 'cashew', 'almond', 'pistachio', 'dates', 'fig', 'sapota', 'litchi',
+            'pear', 'plum', 'peach', 'apricot', 'chickpea', 'lentil', 'beans', 'pumpkin', 'bottle gourd',
+            'ridge gourd', 'bitter gourd', 'cucumber', 'zucchini', 'sweet potato', 'yam', 'turnip', 'radish',
+            'beetroot', 'lettuce', 'celery', 'parsley', 'mint', 'basil', 'dill', 'thyme', 'rosemary', 'sage',
+            'oregano', 'bay leaf', 'cardamom', 'clove', 'nutmeg', 'mace', 'saffron', 'vanilla', 'pepper',
+            'star anise', 'tamarind', 'jackfruit', 'guava', 'jamun', 'custard apple', 'dragon fruit', 'kiwi',
+            'avocado', 'broccoli', 'asparagus', 'artichoke', 'leek', 'kale', 'collard', 'mustard greens',
+            'amaranth', 'arbi', 'colocasia', 'parwal', 'pointed gourd', 'snake gourd', 'ivy gourd', 'kohlrabi',
+            'fennel', 'anise', 'ajwain', 'caraway', 'poppy', 'chia', 'quinoa', 'millet', 'buckwheat', 'oats',
+            'sorghum', 'foxtail millet', 'little millet', 'barnyard millet', 'proso millet', 'finger millet',
+            'amla', 'tinda', 'drumstick', 'moringa', 'lotus root', 'edamame', 'wasabi', 'horseradish', 'endive',
+            'radicchio', 'cress', 'watercress', 'chard', 'turnip greens', 'rapini', 'mustard seed', 'sesame seed',
+            'flaxseed', 'pumpkin seed', 'sunflower seed', 'melon seed', 'chia seed', 'hemp seed', 'poppy seed',
+            'basil seed', 'coriander seed', 'fennel seed', 'cumin seed', 'caraway seed', 'anise seed', 'dill seed',
+            'fenugreek seed', 'mustard oil', 'groundnut oil', 'sesame oil', 'sunflower oil', 'soybean oil',
+            'cottonseed oil', 'coconut oil', 'olive oil', 'rice bran oil', 'corn oil', 'safflower oil', 'canola oil',
+            'ghee', 'butter', 'paneer', 'cheese', 'milk', 'curd', 'yogurt', 'cream', 'ice cream', 'egg', 'chicken',
+            'mutton', 'fish', 'prawn', 'crab', 'lobster', 'oyster', 'clam', 'mussel', 'squid', 'octopus', 'duck',
+            'turkey', 'quail', 'goose', 'rabbit', 'deer', 'buffalo', 'camel', 'yak', 'ostrich', 'emu', 'kangaroo',
+            'snail', 'frog', 'turtle', 'crocodile', 'alligator', 'snake', 'lizard', 'iguana', 'monitor lizard',
+            'salamander', 'newt', 'toad', 'bat', 'rat', 'mouse', 'squirrel', 'porcupine', 'hedgehog', 'mole',
+            'shrew', 'vole', 'gopher', 'beaver', 'otter', 'weasel', 'ferret', 'badger', 'skunk', 'raccoon',
+            'opossum', 'armadillo', 'sloth', 'anteater', 'pangolin', 'aardvark', 'platypus', 'echidna', 'lemur',
+            'tarsier', 'loris', 'galago', 'monkey', 'ape', 'chimpanzee', 'gorilla', 'orangutan', 'gibbon', 'baboon',
+            'macaque', 'langur', 'proboscis monkey', 'colobus monkey', 'guenon', 'patas monkey', 'vervet monkey',
+            'mandrill', 'drill', 'mangabey', 'howler monkey', 'spider monkey', 'woolly monkey', 'saki', 'uakari',
+            'titi monkey', 'capuchin', 'squirrel monkey', 'night monkey', 'owl monkey', 'tamarin', 'marmoset',
+            'lion', 'tiger', 'leopard', 'cheetah', 'jaguar', 'panther', 'cougar', 'lynx', 'bobcat', 'caracal',
+            'serval', 'ocelot', 'margay', 'clouded leopard', 'snow leopard', 'puma', 'mountain lion', 'wildcat',
+            'jungle cat', 'fishing cat', 'leopard cat', 'rusty-spotted cat', 'black panther', 'white tiger',
+            'golden tiger', 'blue tiger', 'siberian tiger', 'bengal tiger', 'indochinese tiger', 'malayan tiger',
+            'sumatran tiger', 'amur tiger', 'caspian tiger', 'balinese tiger', 'javan tiger', 'bali tiger',
+            'tasmanian tiger', 'thylacine', 'hyena', 'wolf', 'fox', 'jackal', 'coyote', 'dingo', 'dhole', 'dog',
+            'cat', 'feral cat', 'house cat', 'domestic cat', 'kitten', 'puppy', 'calf', 'cow', 'bull', 'ox',
+            'buffalo', 'yak', 'zebu', 'bison', 'antelope', 'gazelle', 'deer', 'moose', 'elk', 'caribou', 'reindeer',
+            'sheep', 'goat', 'ram', 'ewe', 'lamb', 'kid', 'horse', 'mare', 'stallion', 'foal', 'colt', 'filly',
+            'donkey', 'mule', 'hinny', 'zebra', 'camel', 'llama', 'alpaca', 'guanaco', 'vicuna', 'pig', 'boar',
+            'hog', 'sow', 'gilt', 'barrow', 'stag', 'bear', 'polar bear', 'brown bear', 'black bear', 'panda',
+            'koala', 'kangaroo', 'wallaby', 'wombat', 'bandicoot', 'bilby', 'numbat', 'quokka', 'quoll', 'tasmanian devil',
+            'platypus', 'echidna', 'dingo', 'tasmanian tiger', 'thylacine', 'opossum', 'armadillo', 'sloth', 'anteater',
+            'pangolin', 'aardvark', 'lemur', 'tarsier', 'loris', 'galago', 'monkey', 'ape', 'chimpanzee', 'gorilla',
+            'orangutan', 'gibbon', 'baboon', 'macaque', 'langur', 'proboscis monkey', 'colobus monkey', 'guenon',
+            'patas monkey', 'vervet monkey', 'mandrill', 'drill', 'mangabey', 'howler monkey', 'spider monkey',
+            'woolly monkey', 'saki', 'uakari', 'titi monkey', 'capuchin', 'squirrel monkey', 'night monkey',
+            'owl monkey', 'tamarin', 'marmoset', 'lion', 'tiger', 'leopard', 'cheetah', 'jaguar', 'panther',
+            'cougar', 'lynx', 'bobcat', 'caracal', 'serval', 'ocelot', 'margay', 'clouded leopard', 'snow leopard',
+            'puma', 'mountain lion', 'wildcat', 'jungle cat', 'fishing cat', 'leopard cat', 'rusty-spotted cat',
+            'black panther', 'white tiger', 'golden tiger', 'blue tiger', 'siberian tiger', 'bengal tiger',
+            'indochinese tiger', 'malayan tiger', 'sumatran tiger', 'amur tiger', 'caspian tiger', 'balinese tiger',
+            'javan tiger', 'bali tiger', 'tasmanian tiger', 'thylacine', 'hyena', 'wolf', 'fox', 'jackal', 'coyote',
+            'dingo', 'dhole', 'dog', 'cat', 'feral cat', 'house cat', 'domestic cat', 'kitten', 'puppy', 'calf',
+            'cow', 'bull', 'ox', 'buffalo', 'yak', 'zebu', 'bison', 'antelope', 'gazelle', 'deer', 'moose', 'elk',
+            'caribou', 'reindeer', 'sheep', 'goat', 'ram', 'ewe', 'lamb', 'kid', 'horse', 'mare', 'stallion', 'foal',
+            'colt', 'filly', 'donkey', 'mule', 'hinny', 'zebra', 'camel', 'llama', 'alpaca', 'guanaco', 'vicuna',
+            'pig', 'boar', 'hog', 'sow', 'gilt', 'barrow', 'stag', 'bear', 'polar bear', 'brown bear', 'black bear',
+            'panda', 'koala', 'kangaroo', 'wallaby', 'wombat', 'bandicoot', 'bilby', 'numbat', 'quokka', 'quoll',
+            'tasmanian devil', 'platypus', 'echidna', 'dingo', 'tasmanian tiger', 'thylacine', 'opossum', 'armadillo',
+            'sloth', 'anteater', 'pangolin', 'aardvark', 'lemur', 'tarsier', 'loris', 'galago', 'monkey', 'ape',
+            'chimpanzee', 'gorilla', 'orangutan', 'gibbon', 'baboon', 'macaque', 'langur', 'proboscis monkey',
+            'colobus monkey', 'guenon', 'patas monkey', 'vervet monkey', 'mandrill', 'drill', 'mangabey',
+            'howler monkey', 'spider monkey', 'woolly monkey', 'saki', 'uakari', 'titi monkey', 'capuchin',
+            'squirrel monkey', 'night monkey', 'owl monkey', 'tamarin', 'marmoset', 'lion', 'tiger', 'leopard',
+            'cheetah', 'jaguar', 'panther', 'cougar', 'lynx', 'bobcat', 'caracal', 'serval', 'ocelot', 'margay',
+            'clouded leopard', 'snow leopard', 'puma', 'mountain lion', 'wildcat', 'jungle cat', 'fishing cat',
+            'leopard cat', 'rusty-spotted cat', 'black panther', 'white tiger', 'golden tiger', 'blue tiger',
+            'siberian tiger', 'bengal tiger', 'indochinese tiger', 'malayan tiger', 'sumatran tiger', 'amur tiger',
+            'caspian tiger', 'balinese tiger', 'javan tiger', 'bali tiger', 'tasmanian tiger', 'thylacine',
+        ]
+    text = text.lower()
+    for commodity in commodity_list:
+        if re.search(r'\b' + re.escape(commodity.lower()) + r'\b', text):
+            return commodity
+    return None
+
+
+def handle_commodity_query(original_text, text_lower, language):
+    try:
+        district = None
+        for d in GUJARAT_DISTRICTS:
+            if d.lower() in text_lower:
+                district = d
+                break
+        date_str = None
+        commodity = extract_commodity_from_text(text_lower)
+        api_response = get_commodity_prices_internal(district, date_str, language)
+        # If no commodity specified, return all as before
+        if not commodity:
+            return api_response
+        # Try to filter API results for the commodity
+        try:
+            api_json = api_response[0].json if hasattr(api_response[0], 'json') else api_response[0].get_json()
+        except Exception:
+            api_json = api_response[0] if isinstance(api_response[0], dict) else {}
+        records = api_json.get('data', {}).get('records', []) if 'data' in api_json else api_json.get('records', [])
+        filtered = [r for r in records if commodity.lower() in r.get('Commodity', '').lower()]
+        if filtered:
+            # Format filtered response
+            response_text = format_commodity_response(filtered, district, date_str)
+            if language != 'en':
+                try:
+                    response_text = translate_text(response_text, language)
+                except Exception as e:
+                    print(f"Translation failed: {e}")
+            return create_response(
+                f"Price for {commodity} in {district}",
+                data={
+                    "type": "commodity",
+                    "response": response_text,
+                    "records": filtered
+                },
+                status=200
+            )
+        # If not found, use Claude to estimate
+        if commodity and district:
+            prompt = f"What is the current mandi price estimate for {commodity} in {district}, Gujarat? Please answer in {language.upper()} and keep it under 100 words."
+            try:
+                estimate = get_claude_response(prompt, "", language)
+            except Exception as e:
+                print(f"Claude error: {e}")
+                estimate = None
+            if not estimate:
+                estimate = RESTRICTED_QUERY_RESPONSE[language]
+            return create_response(
+                f"Estimated price for {commodity} in {district}",
+                data={
+                    "type": "commodity",
+                    "response": estimate,
+                    "records": []
+                },
+                status=200
+            )
+        # Fallback
+        return api_response
+    except Exception as e:
+        print(f"Commodity query error: {str(e)}")
+        return create_response(
+            "Failed to process commodity query",
+            error=str(e),
+            status=500
+        )
+
 def handle_weather_query(original_text, text_lower, language):
     try:
         location_info = extract_location_from_command(text_lower)
-        
         if location_info and location_info.get('confidence', 0) >= 0.8:
             district = location_info['district']
             coords = GUJARAT_DISTRICTS[district]
             weather_data = get_weather_data(coords['lat'], coords['lon'])
-            
             if weather_data:
                 response = format_weather_response(weather_data, district)
-                
                 if location_info.get('confidence', 1.0) < 1.0:
                     did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
                     response = f"({did_you_mean} {district}?)\n\n" + response
-                
                 if language != 'en':
                     try:
                         response = translate_text(response, language)
                     except Exception as e:
                         print(f"Weather translation failed: {e}")
-                
                 return create_response(
                     "Weather information retrieved successfully",
                     data={
@@ -835,25 +985,20 @@ def handle_weather_query(original_text, text_lower, language):
                         error_msg = translate_text(error_msg, language)
                     except:
                         pass
-                
                 return create_response(
                     "Failed to retrieve weather data",
                     error=error_msg,
                     status=500
                 )
-        
         elif location_info and location_info.get('confidence', 0) > 0.4:
             district = location_info['district']
             did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
-            
             error_msg = f"{did_you_mean} {district}? Please confirm the district name."
-            
             if language != 'en':
                 try:
                     error_msg = translate_text(error_msg, language)
                 except:
                     pass
-            
             return create_response(
                 "District name unclear",
                 data={
@@ -863,14 +1008,11 @@ def handle_weather_query(original_text, text_lower, language):
                 },
                 status=200
             )
-        
         else:
             base_msg = DISTRICT_ERROR_MESSAGES["district_not_found"][language]
             popular_districts = get_popular_districts_list(language)
             districts_list = ", ".join(popular_districts)
-            
             error_msg = f"{base_msg}\n{districts_list}"
-            
             return create_response(
                 "District not recognized",
                 data={
@@ -880,7 +1022,6 @@ def handle_weather_query(original_text, text_lower, language):
                 },
                 status=200
             )
-            
     except Exception as e:
         print(f"Weather query error: {str(e)}")
         return create_response(
@@ -889,25 +1030,6 @@ def handle_weather_query(original_text, text_lower, language):
             status=500
         )
 
-def handle_commodity_query(original_text, text_lower, language):
-   try:
-       district = None
-       for d in GUJARAT_DISTRICTS:
-           if d.lower() in text_lower:
-               district = d
-               break
-       
-       date_str = None
-       
-       return get_commodity_prices_internal(district, date_str, language)
-       
-   except Exception as e:
-       print(f"Commodity query error: {str(e)}")
-       return create_response(
-           "Failed to process commodity query",
-           error=str(e),
-           status=500
-       )
 
 def handle_general_chat(text, language):
    try:
