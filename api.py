@@ -79,6 +79,117 @@ GUJARAT_DISTRICTS = {
    "Valsad": {"lat": 20.5992, "lon": 72.9342}
 }
 
+COMMODITY_MAPPING = {
+    'tomato': 'Tomato',
+    'onion': 'Onion',
+    'potato': 'Potato',
+    'brinjal': 'Brinjal',
+    'eggplant': 'Brinjal',
+    'okra': 'Bhindi',
+    'ladyfinger': 'Bhindi',
+    'cabbage': 'Cabbage',
+    'cauliflower': 'Cauliflower',
+    'carrot': 'Carrot',
+    'beans': 'Beans',
+    'peas': 'Peas',
+    'spinach': 'Spinach',
+    'coriander': 'Coriander',
+    'mint': 'Mint',
+    'chilli': 'Chili',
+    'chili': 'Chili',
+    'pepper': 'Chili',
+    'garlic': 'Garlic',
+    'ginger': 'Ginger',
+    'cucumber': 'Cucumber',
+    'bottle gourd': 'Bottle gourd',
+    'ridge gourd': 'Ridge gourd',
+    'bitter gourd': 'Bitter gourd',
+    'pumpkin': 'Pumpkin',
+    'wheat': 'Wheat',
+    'rice': 'Rice',
+    'bajra': 'Bajra',
+    'jowar': 'Jowar',
+    'cotton': 'Cotton',
+    'groundnut': 'Groundnut',
+    'peanut': 'Groundnut',
+    'sesame': 'Sesame',
+    'mustard': 'Mustard',
+    'cumin': 'Cumin',
+    'coriander seed': 'Coriander seed',
+    'turmeric': 'Turmeric',
+    'fenugreek': 'Fenugreek',
+    'castor seed': 'Castor seed',
+    'टमाटर': 'Tomato',
+    'प्याज': 'Onion',
+    'आलू': 'Potato',
+    'बैंगन': 'Brinjal',
+    'भिंडी': 'Bhindi',
+    'पत्तागोभी': 'Cabbage',
+    'फूलगोभी': 'Cauliflower',
+    'गाजर': 'Carrot',
+    'बीन्स': 'Beans',
+    'मटर': 'Peas',
+    'पालक': 'Spinach',
+    'धनिया': 'Coriander',
+    'पुदीना': 'Mint',
+    'मिर्च': 'Chili',
+    'लहसुन': 'Garlic',
+    'अदरक': 'Ginger',
+    'खीरा': 'Cucumber',
+    'लौकी': 'Bottle gourd',
+    'तोरी': 'Ridge gourd',
+    'करेला': 'Bitter gourd',
+    'कद्दू': 'Pumpkin',
+    'गेहूं': 'Wheat',
+    'चावल': 'Rice',
+    'बाजरा': 'Bajra',
+    'ज्वार': 'Jowar',
+    'कपास': 'Cotton',
+    'मूंगफली': 'Groundnut',
+    'तिल': 'Sesame',
+    'सरसों': 'Mustard',
+    'जीरा': 'Cumin',
+    'धनिया बीज': 'Coriander seed',
+    'हल्दी': 'Turmeric',
+    'मेथी': 'Fenugreek',
+    'अरंडी': 'Castor seed',
+    'ટમેટા': 'Tomato',
+    'ટમાટર': 'Tomato',
+    'ડુંગળી': 'Onion',
+    'બટાકા': 'Potato',
+    'રીંગણ': 'Brinjal',
+    'ભીંડા': 'Bhindi',
+    'કોબી': 'Cabbage',
+    'ફૂલકોબી': 'Cauliflower',
+    'ગાજર': 'Carrot',
+    'શીંગ': 'Beans',
+    'વટાણા': 'Peas',
+    'પાલક': 'Spinach',
+    'કોથમીર': 'Coriander',
+    'ફુદીનો': 'Mint',
+    'મરચું': 'Chili',
+    'લસણ': 'Garlic',
+    'આદુ': 'Ginger',
+    'કાકડી': 'Cucumber',
+    'દૂધી': 'Bottle gourd',
+    'તુરીયા': 'Ridge gourd',
+    'કારેલા': 'Bitter gourd',
+    'કોળું': 'Pumpkin',
+    'ઘઉં': 'Wheat',
+    'ચોખા': 'Rice',
+    'બાજરી': 'Bajra',
+    'જુવાર': 'Jowar',
+    'કપાસ': 'Cotton',
+    'મગફળી': 'Groundnut',
+    'તલ': 'Sesame',
+    'સરસવ': 'Mustard',
+    'જીરું': 'Cumin',
+    'કોથમીર બીજ': 'Coriander seed',
+    'હળદર': 'Turmeric',
+    'મેથી': 'Fenugreek',
+    'એરંડ': 'Castor seed'
+}
+
 DISEASE_MESSAGES = {
    "unsupported_format": {
        "en": "Unsupported file format. Please upload a JPG or PNG image.",
@@ -112,6 +223,21 @@ DISTRICT_ERROR_MESSAGES = {
         "en": "Did you mean",
         "hi": "क्या आपका मतलब था",
         "gu": "શું તમારો મતલબ હતો"
+    },
+    "commodity_not_found": {
+        "en": "I couldn't find that commodity. Please check the spelling or try searching for common vegetables like tomato, onion, potato.",
+        "hi": "मुझे वह कमोडिटी नहीं मिली। कृपया वर्तनी जांचें या टमाटर, प्याज, आलू जैसी सामान्य सब्जियों की खोज करें।",
+        "gu": "મને તે કોમોડિટી મળી નથી. કૃપા કરીને સ્પેલિંગ તપાસો અથવા ટમેટા, ડુંગળી, બટાકા જેવી સામાન્ય શાકભાજીની શોધ કરો."
+    },
+    "district_required": {
+        "en": "Please specify a Gujarat district to get commodity prices. For example: 'tomato price in Ahmedabad' or 'onion rates in Surat'",
+        "hi": "कृपया कमोडिटी की कीमतें पाने के लिए गुजरात जिला निर्दिष्ट करें। उदाहरण: 'अहमदाबाद में टमाटर की कीमत' या 'सूरत में प्याज के दाम'",
+        "gu": "કૃપા કરીને કોમોડિટીના ભાવ મેળવવા માટે ગુજરાત જિલ્લો સ્પષ્ટ કરો. ઉદાહરણ: 'અમદાવાદમાં ટમેટાની કિંમત' અથવા 'સુરતમાં ડુંગળીના રેટ'"
+    },
+    "commodity_required": {
+        "en": "Please specify which commodity/vegetable price you want to check. For example: 'tomato price in Ahmedabad' or 'onion rates in Surat'",
+        "hi": "कृपया बताएं कि आप किस कमोडिटी/सब्जी की कीमत जांचना चाहते हैं। उदाहरण: 'अहमदाबाद में टमाटर की कीमत' या 'सूरत में प्याज के दाम'",
+        "gu": "કૃપા કરીને સ્પષ્ટ કરો કે તમે કઈ કોમોડિટી/શાકભાજીની કિંમત તપાસવા માંગો છો. ઉદાહરણ: 'અમદાવાદમાં ટમેટાની કિંમત' અથવા 'સુરતમાં ડુંગળીના રેટ'"
     }
 }
 
@@ -194,7 +320,6 @@ def convert_image_to_supported_format(image_bytes):
        raise
 
 def translate_disease_text(text: str, target_language: str) -> str:
-    """Manual translation function for disease names"""
     try:
         if target_language == "en":
             return text
@@ -234,12 +359,10 @@ def translate_text(text, target_language):
        else:
            return text
        
-       # Clean and validate input text
        cleaned_text = text.strip()
        if not cleaned_text:
            return text
        
-       # Split long text into smaller chunks if needed
        max_chunk_length = 500
        if len(cleaned_text) > max_chunk_length:
            sentences = cleaned_text.split('\n')
@@ -255,25 +378,22 @@ def translate_text(text, target_language):
                                break
                        except Exception as e:
                            print(f"Sentence translation attempt {attempt + 1} failed: {e}")
-                           if attempt == 2:  # Last attempt
-                               translated_sentences.append(sentence)  # Keep original
+                           if attempt == 2:
+                               translated_sentences.append(sentence)
            
            return '\n'.join(translated_sentences)
        else:
-           # Try translation with retry mechanism for shorter text
            for attempt in range(3):
                try:
                    translated = translator.translate(cleaned_text)
                    if translated and len(translated.strip()) > 0:
-                       # Additional validation for completeness
-                       if len(translated.strip()) >= len(cleaned_text) * 0.3:  # At least 30% of original length
+                       if len(translated.strip()) >= len(cleaned_text) * 0.3:
                            return translated.strip()
                    print(f"Translation attempt {attempt + 1} incomplete for: {cleaned_text[:50]}...")
                except Exception as e:
                    print(f"Translation attempt {attempt + 1} error: {e}")
                    continue
            
-           # If all attempts fail, return original text
            print(f"All translation attempts failed for text: {cleaned_text[:50]}...")
            return text
            
@@ -324,7 +444,27 @@ def format_weather_response(data, district):
    
    return response
 
-def get_commodity_prices_internal(district, date_str, language):
+def extract_commodity_from_text(text):
+    text_lower = text.lower().strip()
+    
+    for key, value in COMMODITY_MAPPING.items():
+        if key.lower() in text_lower:
+            return value
+    
+    best_match = None
+    best_score = 0.6
+    
+    for key, value in COMMODITY_MAPPING.items():
+        words = text_lower.split()
+        for word in words:
+            score = similarity(word, key.lower())
+            if score > best_score:
+                best_match = value
+                best_score = score
+    
+    return best_match
+
+def get_commodity_prices_internal(district, date_str, language, commodity=None):
    base_url = "https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24"
    params = {
        "api-key": "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b",
@@ -336,6 +476,10 @@ def get_commodity_prices_internal(district, date_str, language):
    if district:
        params["filters[District]"] = district
    
+   if commodity:
+       params["filters[Commodity]"] = commodity
+       print(f"Filtering by commodity: {commodity}")
+   
    if date_str:
        try:
            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
@@ -345,14 +489,25 @@ def get_commodity_prices_internal(district, date_str, language):
            pass
    
    try:
+       print(f"API Request params: {params}")
        response = requests.get(base_url, params=params)
        response.raise_for_status()
        api_data = response.json()
        records = api_data.get('records', [])
        
+       print(f"Found {len(records)} records")
+       
        if not records:
            no_data_msg = "No commodity price data found for the selected criteria."
-           if language != 'en':
+           if commodity:
+               if language == 'hi':
+                   no_data_msg = f"{commodity} के लिए कोई मंडी भाव नहीं मिला।"
+               elif language == 'gu':
+                   no_data_msg = f"{commodity} માટે કોઈ માંડી ભાવ મળ્યો નથી."
+               else:
+                   no_data_msg = f"No mandi prices found for {commodity}."
+           
+           if language != 'en' and not commodity:
                try:
                    no_data_msg = translate_text(no_data_msg, language)
                except:
@@ -363,12 +518,17 @@ def get_commodity_prices_internal(district, date_str, language):
                data={
                    "type": "commodity",
                    "response": no_data_msg, 
-                   "records": []
+                   "records": [],
+                   "filters_applied": {
+                       "district": district,
+                       "commodity": commodity,
+                       "date": date_str
+                   }
                }, 
                status=200
            )
        else:
-           response_text = format_commodity_response(records, district, date_str)
+           response_text = format_commodity_response(records, district, date_str, commodity)
        
        if language != 'en':
            try:
@@ -381,39 +541,78 @@ def get_commodity_prices_internal(district, date_str, language):
            data={
                "type": "commodity",
                "response": response_text, 
-               "records": records
+               "records": records,
+               "total_records": len(records),
+               "filters_applied": {
+                   "district": district,
+                   "commodity": commodity,
+                   "date": date_str
+               }
            }, 
            status=200
        )
        
    except Exception as e:
+       print(f"Commodity API error: {e}")
        return create_response(
            "Failed to retrieve commodity prices", 
            error=f"Error fetching commodity data: {e}", 
            status=500
        )
 
-def format_commodity_response(records, district, date):
+def format_commodity_response(records, district, date, commodity=None):
    if not records:
        return "No commodity price data found."
    
    response = f"Commodity prices"
+   if commodity:
+       response += f" for {commodity}"
    if district:
        response += f" in {district}, Gujarat"
    if date:
        response += f" for {date}"
    response += ":\n\n"
    
-   for i, record in enumerate(records[:5]):
-       response += f"{i+1}. {record.get('Commodity', 'N/A')} ({record.get('Variety', 'N/A')})\n"
-       response += f"   Market: {record.get('Market', 'N/A')}\n"
-       response += f"   Price Range: ₹{record.get('Min_Price', 'N/A')} - ₹{record.get('Max_Price', 'N/A')}\n"
-       response += f"   Modal Price: ₹{record.get('Modal_Price', 'N/A')}\n\n"
+   commodity_groups = {}
+   for record in records:
+       comm_name = record.get('Commodity', 'Unknown')
+       if comm_name not in commodity_groups:
+           commodity_groups[comm_name] = []
+       commodity_groups[comm_name].append(record)
    
-   if len(records) > 5:
-       response += f"... and {len(records) - 5} more items.\n"
+   count = 0
+   max_display = 10
+   
+   for comm_name, comm_records in commodity_groups.items():
+       if count >= max_display:
+           break
+           
+       response += f"📊 {comm_name}:\n"
+       
+       for i, record in enumerate(comm_records[:3]):
+           count += 1
+           response += f"   • Market: {record.get('Market', 'N/A')}\n"
+           if record.get('Variety', 'N/A') != 'N/A':
+               response += f"     Variety: {record.get('Variety', 'N/A')}\n"
+           response += f"     Price Range: ₹{record.get('Min_Price', 'N/A')} - ₹{record.get('Max_Price', 'N/A')}\n"
+           response += f"     Modal Price: ₹{record.get('Modal_Price', 'N/A')}\n"
+           if record.get('Arrival_Date'):
+               response += f"     Date: {record.get('Arrival_Date', 'N/A')}\n"
+           response += "\n"
+           
+           if count >= max_display:
+               break
+       
+       if len(comm_records) > 3:
+           response += f"   ... and {len(comm_records) - 3} more markets for {comm_name}\n\n"
+   
+   if len(records) > max_display:
+       response += f"... and {len(records) - count} more records available.\n"
    
    return response
+
+def similarity(a, b):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 def is_query_allowed(text):
     restricted_keywords = [
@@ -472,9 +671,6 @@ STRICT RULES:
    except Exception as e:
        print(f"Error with Claude API: {e}")
        return "Sorry, I'm having trouble processing your request."
-
-def similarity(a, b):
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 def find_closest_district(user_input, threshold=0.6):
     user_input_lower = user_input.lower().strip()
@@ -569,6 +765,15 @@ def get_popular_districts_list(language):
     
     return popular_districts.get(language, popular_districts['en'])
 
+def get_popular_commodities_list(language):
+    popular_commodities = {
+        'en': ['Tomato', 'Onion', 'Potato', 'Brinjal', 'Bhindi', 'Cabbage'],
+        'hi': ['टमाटर', 'प्याज', 'आलू', 'बैंगन', 'भिंडी', 'पत्तागोभी'],
+        'gu': ['ટમેટા', 'ડુંગળી', 'બટાકા', 'રીંગણ', 'ભીંડા', 'કોબી']
+    }
+    
+    return popular_commodities.get(language, popular_commodities['en'])
+
 def extract_location_from_command(command):
     command_lower = command.lower().strip()
     
@@ -643,7 +848,7 @@ def is_commodity_query(text_lower):
        'sell', 'buy', 'crops', 'vegetables', 'fruits', 'agriculture',
        'farming', 'harvest', 'produce', 'wholesale', 'retail',
        'किमत', 'दाम', 'मंडी', 'बाजार', 'फसल', 'खेती',
-       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી'
+       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી', 'ભાવ'
    ]
    return any(keyword in text_lower for keyword in commodity_keywords)
 
@@ -753,7 +958,6 @@ def handle_disease_detection(language):
            })
            disease_names.append(translated_name)
        
-       # Create a comprehensive response message
        if len(disease_names) == 1:
            if lang_code == 'hi':
                response_msg = f"पहचाना गया रोग: {disease_names[0]}"
@@ -797,177 +1001,28 @@ def handle_disease_detection(language):
            status=422
        )
 
-def extract_commodity_from_text(text, commodity_list=None):
-    """
-    Extracts the commodity name from the text using a list of known commodities.
-    If commodity_list is None, uses a default set of common commodities.
-    Returns the matched commodity or None.
-    """
-    if commodity_list is None:
-        commodity_list = [
-            'tomato', 'potato', 'onion', 'wheat', 'rice', 'cotton', 'groundnut', 'bajra', 'maize', 'chili',
-            'garlic', 'ginger', 'cabbage', 'cauliflower', 'brinjal', 'okra', 'spinach', 'carrot', 'peas',
-            'banana', 'mango', 'apple', 'pomegranate', 'coriander', 'cumin', 'mustard', 'soybean', 'turmeric',
-            'sugarcane', 'jowar', 'moong', 'urad', 'masoor', 'gram', 'sesame', 'sunflower', 'linseed', 'barley',
-            'guar', 'castor', 'fenugreek', 'papaya', 'lemon', 'orange', 'grapes', 'watermelon', 'muskmelon',
-            'coconut', 'betel', 'arecanut', 'cashew', 'almond', 'pistachio', 'dates', 'fig', 'sapota', 'litchi',
-            'pear', 'plum', 'peach', 'apricot', 'chickpea', 'lentil', 'beans', 'pumpkin', 'bottle gourd',
-            'ridge gourd', 'bitter gourd', 'cucumber', 'zucchini', 'sweet potato', 'yam', 'turnip', 'radish',
-            'beetroot', 'lettuce', 'celery', 'parsley', 'mint', 'basil', 'dill', 'thyme', 'rosemary', 'sage',
-            'oregano', 'bay leaf', 'cardamom', 'clove', 'nutmeg', 'mace', 'saffron', 'vanilla', 'pepper',
-            'star anise', 'tamarind', 'jackfruit', 'guava', 'jamun', 'custard apple', 'dragon fruit', 'kiwi',
-            'avocado', 'broccoli', 'asparagus', 'artichoke', 'leek', 'kale', 'collard', 'mustard greens',
-            'amaranth', 'arbi', 'colocasia', 'parwal', 'pointed gourd', 'snake gourd', 'ivy gourd', 'kohlrabi',
-            'fennel', 'anise', 'ajwain', 'caraway', 'poppy', 'chia', 'quinoa', 'millet', 'buckwheat', 'oats',
-            'sorghum', 'foxtail millet', 'little millet', 'barnyard millet', 'proso millet', 'finger millet',
-            'amla', 'tinda', 'drumstick', 'moringa', 'lotus root', 'edamame', 'wasabi', 'horseradish', 'endive',
-            'radicchio', 'cress', 'watercress', 'chard', 'turnip greens', 'rapini', 'mustard seed', 'sesame seed',
-            'flaxseed', 'pumpkin seed', 'sunflower seed', 'melon seed', 'chia seed', 'hemp seed', 'poppy seed',
-            'basil seed', 'coriander seed', 'fennel seed', 'cumin seed', 'caraway seed', 'anise seed', 'dill seed',
-            'fenugreek seed', 'mustard oil', 'groundnut oil', 'sesame oil', 'sunflower oil', 'soybean oil',
-            'cottonseed oil', 'coconut oil', 'olive oil', 'rice bran oil', 'corn oil', 'safflower oil', 'canola oil',
-            'ghee', 'butter', 'paneer', 'cheese', 'milk', 'curd', 'yogurt', 'cream', 'ice cream', 'egg', 'chicken',
-            'mutton', 'fish', 'prawn', 'crab', 'lobster', 'oyster', 'clam', 'mussel', 'squid', 'octopus', 'duck',
-            'turkey', 'quail', 'goose', 'rabbit', 'deer', 'buffalo', 'camel', 'yak', 'ostrich', 'emu', 'kangaroo',
-            'snail', 'frog', 'turtle', 'crocodile', 'alligator', 'snake', 'lizard', 'iguana', 'monitor lizard',
-            'salamander', 'newt', 'toad', 'bat', 'rat', 'mouse', 'squirrel', 'porcupine', 'hedgehog', 'mole',
-            'shrew', 'vole', 'gopher', 'beaver', 'otter', 'weasel', 'ferret', 'badger', 'skunk', 'raccoon',
-            'opossum', 'armadillo', 'sloth', 'anteater', 'pangolin', 'aardvark', 'platypus', 'echidna', 'lemur',
-            'tarsier', 'loris', 'galago', 'monkey', 'ape', 'chimpanzee', 'gorilla', 'orangutan', 'gibbon', 'baboon',
-            'macaque', 'langur', 'proboscis monkey', 'colobus monkey', 'guenon', 'patas monkey', 'vervet monkey',
-            'mandrill', 'drill', 'mangabey', 'howler monkey', 'spider monkey', 'woolly monkey', 'saki', 'uakari',
-            'titi monkey', 'capuchin', 'squirrel monkey', 'night monkey', 'owl monkey', 'tamarin', 'marmoset',
-            'lion', 'tiger', 'leopard', 'cheetah', 'jaguar', 'panther', 'cougar', 'lynx', 'bobcat', 'caracal',
-            'serval', 'ocelot', 'margay', 'clouded leopard', 'snow leopard', 'puma', 'mountain lion', 'wildcat',
-            'jungle cat', 'fishing cat', 'leopard cat', 'rusty-spotted cat', 'black panther', 'white tiger',
-            'golden tiger', 'blue tiger', 'siberian tiger', 'bengal tiger', 'indochinese tiger', 'malayan tiger',
-            'sumatran tiger', 'amur tiger', 'caspian tiger', 'balinese tiger', 'javan tiger', 'bali tiger',
-            'tasmanian tiger', 'thylacine', 'hyena', 'wolf', 'fox', 'jackal', 'coyote', 'dingo', 'dhole', 'dog',
-            'cat', 'feral cat', 'house cat', 'domestic cat', 'kitten', 'puppy', 'calf', 'cow', 'bull', 'ox',
-            'buffalo', 'yak', 'zebu', 'bison', 'antelope', 'gazelle', 'deer', 'moose', 'elk', 'caribou', 'reindeer',
-            'sheep', 'goat', 'ram', 'ewe', 'lamb', 'kid', 'horse', 'mare', 'stallion', 'foal', 'colt', 'filly',
-            'donkey', 'mule', 'hinny', 'zebra', 'camel', 'llama', 'alpaca', 'guanaco', 'vicuna', 'pig', 'boar',
-            'hog', 'sow', 'gilt', 'barrow', 'stag', 'bear', 'polar bear', 'brown bear', 'black bear', 'panda',
-            'koala', 'kangaroo', 'wallaby', 'wombat', 'bandicoot', 'bilby', 'numbat', 'quokka', 'quoll', 'tasmanian devil',
-            'platypus', 'echidna', 'dingo', 'tasmanian tiger', 'thylacine', 'opossum', 'armadillo', 'sloth', 'anteater',
-            'pangolin', 'aardvark', 'lemur', 'tarsier', 'loris', 'galago', 'monkey', 'ape', 'chimpanzee', 'gorilla',
-            'orangutan', 'gibbon', 'baboon', 'macaque', 'langur', 'proboscis monkey', 'colobus monkey', 'guenon',
-            'patas monkey', 'vervet monkey', 'mandrill', 'drill', 'mangabey', 'howler monkey', 'spider monkey',
-            'woolly monkey', 'saki', 'uakari', 'titi monkey', 'capuchin', 'squirrel monkey', 'night monkey',
-            'owl monkey', 'tamarin', 'marmoset', 'lion', 'tiger', 'leopard', 'cheetah', 'jaguar', 'panther',
-            'cougar', 'lynx', 'bobcat', 'caracal', 'serval', 'ocelot', 'margay', 'clouded leopard', 'snow leopard',
-            'puma', 'mountain lion', 'wildcat', 'jungle cat', 'fishing cat', 'leopard cat', 'rusty-spotted cat',
-            'black panther', 'white tiger', 'golden tiger', 'blue tiger', 'siberian tiger', 'bengal tiger',
-            'indochinese tiger', 'malayan tiger', 'sumatran tiger', 'amur tiger', 'caspian tiger', 'balinese tiger',
-            'javan tiger', 'bali tiger', 'tasmanian tiger', 'thylacine', 'hyena', 'wolf', 'fox', 'jackal', 'coyote',
-            'dingo', 'dhole', 'dog', 'cat', 'feral cat', 'house cat', 'domestic cat', 'kitten', 'puppy', 'calf',
-            'cow', 'bull', 'ox', 'buffalo', 'yak', 'zebu', 'bison', 'antelope', 'gazelle', 'deer', 'moose', 'elk',
-            'caribou', 'reindeer', 'sheep', 'goat', 'ram', 'ewe', 'lamb', 'kid', 'horse', 'mare', 'stallion', 'foal',
-            'colt', 'filly', 'donkey', 'mule', 'hinny', 'zebra', 'camel', 'llama', 'alpaca', 'guanaco', 'vicuna',
-            'pig', 'boar', 'hog', 'sow', 'gilt', 'barrow', 'stag', 'bear', 'polar bear', 'brown bear', 'black bear',
-            'panda', 'koala', 'kangaroo', 'wallaby', 'wombat', 'bandicoot', 'bilby', 'numbat', 'quokka', 'quoll',
-            'tasmanian devil', 'platypus', 'echidna', 'dingo', 'tasmanian tiger', 'thylacine', 'opossum', 'armadillo',
-            'sloth', 'anteater', 'pangolin', 'aardvark', 'lemur', 'tarsier', 'loris', 'galago', 'monkey', 'ape',
-            'chimpanzee', 'gorilla', 'orangutan', 'gibbon', 'baboon', 'macaque', 'langur', 'proboscis monkey',
-            'colobus monkey', 'guenon', 'patas monkey', 'vervet monkey', 'mandrill', 'drill', 'mangabey',
-            'howler monkey', 'spider monkey', 'woolly monkey', 'saki', 'uakari', 'titi monkey', 'capuchin',
-            'squirrel monkey', 'night monkey', 'owl monkey', 'tamarin', 'marmoset', 'lion', 'tiger', 'leopard',
-            'cheetah', 'jaguar', 'panther', 'cougar', 'lynx', 'bobcat', 'caracal', 'serval', 'ocelot', 'margay',
-            'clouded leopard', 'snow leopard', 'puma', 'mountain lion', 'wildcat', 'jungle cat', 'fishing cat',
-            'leopard cat', 'rusty-spotted cat', 'black panther', 'white tiger', 'golden tiger', 'blue tiger',
-            'siberian tiger', 'bengal tiger', 'indochinese tiger', 'malayan tiger', 'sumatran tiger', 'amur tiger',
-            'caspian tiger', 'balinese tiger', 'javan tiger', 'bali tiger', 'tasmanian tiger', 'thylacine',
-        ]
-    text = text.lower()
-    for commodity in commodity_list:
-        if re.search(r'\b' + re.escape(commodity.lower()) + r'\b', text):
-            return commodity
-    return None
-
-
-def handle_commodity_query(original_text, text_lower, language):
-    try:
-        district = None
-        for d in GUJARAT_DISTRICTS:
-            if d.lower() in text_lower:
-                district = d
-                break
-        date_str = None
-        commodity = extract_commodity_from_text(text_lower)
-        api_response = get_commodity_prices_internal(district, date_str, language)
-        # If no commodity specified, return all as before
-        if not commodity:
-            return api_response
-        # Try to filter API results for the commodity
-        try:
-            api_json = api_response[0].json if hasattr(api_response[0], 'json') else api_response[0].get_json()
-        except Exception:
-            api_json = api_response[0] if isinstance(api_response[0], dict) else {}
-        records = api_json.get('data', {}).get('records', []) if 'data' in api_json else api_json.get('records', [])
-        filtered = [r for r in records if commodity.lower() in r.get('Commodity', '').lower()]
-        if filtered:
-            # Format filtered response
-            response_text = format_commodity_response(filtered, district, date_str)
-            if language != 'en':
-                try:
-                    response_text = translate_text(response_text, language)
-                except Exception as e:
-                    print(f"Translation failed: {e}")
-            return create_response(
-                f"Price for {commodity} in {district}",
-                data={
-                    "type": "commodity",
-                    "response": response_text,
-                    "records": filtered
-                },
-                status=200
-            )
-        # If not found, use Claude to estimate
-        if commodity and district:
-            prompt = f"What is the current mandi price estimate for {commodity} in {district}, Gujarat? Please answer in {language.upper()} and keep it under 100 words."
-            try:
-                estimate = get_claude_response(prompt, "", language)
-            except Exception as e:
-                print(f"Claude error: {e}")
-                estimate = None
-            if not estimate:
-                estimate = RESTRICTED_QUERY_RESPONSE[language]
-            return create_response(
-                f"Estimated price for {commodity} in {district}",
-                data={
-                    "type": "commodity",
-                    "response": estimate,
-                    "records": []
-                },
-                status=200
-            )
-        # Fallback
-        return api_response
-    except Exception as e:
-        print(f"Commodity query error: {str(e)}")
-        return create_response(
-            "Failed to process commodity query",
-            error=str(e),
-            status=500
-        )
-
 def handle_weather_query(original_text, text_lower, language):
     try:
         location_info = extract_location_from_command(text_lower)
+        
         if location_info and location_info.get('confidence', 0) >= 0.8:
             district = location_info['district']
             coords = GUJARAT_DISTRICTS[district]
             weather_data = get_weather_data(coords['lat'], coords['lon'])
+            
             if weather_data:
                 response = format_weather_response(weather_data, district)
+                
                 if location_info.get('confidence', 1.0) < 1.0:
                     did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
                     response = f"({did_you_mean} {district}?)\n\n" + response
+                
                 if language != 'en':
                     try:
                         response = translate_text(response, language)
                     except Exception as e:
                         print(f"Weather translation failed: {e}")
+                
                 return create_response(
                     "Weather information retrieved successfully",
                     data={
@@ -985,20 +1040,25 @@ def handle_weather_query(original_text, text_lower, language):
                         error_msg = translate_text(error_msg, language)
                     except:
                         pass
+                
                 return create_response(
                     "Failed to retrieve weather data",
                     error=error_msg,
                     status=500
                 )
+        
         elif location_info and location_info.get('confidence', 0) > 0.4:
             district = location_info['district']
             did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
+            
             error_msg = f"{did_you_mean} {district}? Please confirm the district name."
+            
             if language != 'en':
                 try:
                     error_msg = translate_text(error_msg, language)
                 except:
                     pass
+            
             return create_response(
                 "District name unclear",
                 data={
@@ -1008,11 +1068,14 @@ def handle_weather_query(original_text, text_lower, language):
                 },
                 status=200
             )
+        
         else:
             base_msg = DISTRICT_ERROR_MESSAGES["district_not_found"][language]
             popular_districts = get_popular_districts_list(language)
             districts_list = ", ".join(popular_districts)
+            
             error_msg = f"{base_msg}\n{districts_list}"
+            
             return create_response(
                 "District not recognized",
                 data={
@@ -1022,6 +1085,7 @@ def handle_weather_query(original_text, text_lower, language):
                 },
                 status=200
             )
+            
     except Exception as e:
         print(f"Weather query error: {str(e)}")
         return create_response(
@@ -1030,6 +1094,64 @@ def handle_weather_query(original_text, text_lower, language):
             status=500
         )
 
+def handle_commodity_query(original_text, text_lower, language):
+    try:
+        district = None
+        location_info = extract_location_from_command(text_lower)
+        
+        if location_info and location_info.get('confidence', 0) >= 0.6:
+            district = location_info['district']
+        
+        commodity = extract_commodity_from_text(original_text)
+        print(f"Extracted commodity: {commodity} from text: {original_text}")
+        
+        if not district:
+            base_msg = DISTRICT_ERROR_MESSAGES["district_required"][language]
+            popular_districts = get_popular_districts_list(language)
+            districts_list = ", ".join(popular_districts)
+            
+            error_msg = f"{base_msg}\n\nSuggested districts: {districts_list}"
+            
+            return create_response(
+                "District required for commodity prices",
+                data={
+                    "type": "error",
+                    "response": error_msg,
+                    "suggested_districts": popular_districts,
+                    "error_type": "district_required"
+                },
+                status=200
+            )
+        
+        if not commodity:
+            base_msg = DISTRICT_ERROR_MESSAGES["commodity_required"][language]
+            popular_commodities = get_popular_commodities_list(language)
+            commodities_list = ", ".join(popular_commodities)
+            
+            error_msg = f"{base_msg}\n\nSuggested commodities: {commodities_list}"
+            
+            return create_response(
+                "Commodity required for price check",
+                data={
+                    "type": "error",
+                    "response": error_msg,
+                    "suggested_commodities": popular_commodities,
+                    "error_type": "commodity_required"
+                },
+                status=200
+            )
+        
+        date_str = None
+        
+        return get_commodity_prices_internal(district, date_str, language, commodity)
+        
+    except Exception as e:
+        print(f"Commodity query error: {str(e)}")
+        return create_response(
+            "Failed to process commodity query",
+            error=str(e),
+            status=500
+        )
 
 def handle_general_chat(text, language):
    try:
@@ -1133,21 +1255,29 @@ def health_check():
 @app.route('/', methods=['GET'])
 def root():
    return create_response(
-       "Gujarat Smart Assistant API with Disease Detection", 
+       "Gujarat Smart Assistant API with Enhanced Commodity Filtering", 
        data={
-           "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.1.0",
-           "description": "Restricted intelligent API for Gujarat agriculture - weather, commodity prices, and disease detection only",
+           "name": "Gujarat Smart Assistant API with Enhanced Commodity Filtering",
+           "version": "3.2.0",
+           "description": "Enhanced intelligent API for Gujarat agriculture with granular commodity filtering - weather, specific commodity prices, and disease detection",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
                "Restricted query processing (agriculture only)",
                "Weather information for Gujarat districts",
-               "Commodity/Mandi price information",
+               "Granular commodity/Mandi price filtering by specific crops",
+               "Support for commodity queries in Gujarati, Hindi, and English",
                "Vegetable disease detection using AI",
                "Multi-language support with proper translation",
-               "Fuzzy district name matching for voice input"
-           ]
+               "Fuzzy district name matching for voice input",
+               "Enhanced commodity extraction from natural language queries"
+           ],
+           "supported_commodities": list(set(COMMODITY_MAPPING.values())),
+           "example_queries": {
+               "english": ["What is the price of tomato in Ahmedabad?", "Show me onion rates in Surat"],
+               "hindi": ["अहमदाबाद में टमाटर की कीमत क्या है?", "सूरत में प्याज के दाम बताएं"],
+               "gujarati": ["અમદાવાદમાં ટમેટાનો ભાવ કેટલો છે?", "સુરતમાં ડુંગળીના રેટ બતાવો"]
+           }
        }, 
        status=200
    )
