@@ -13,6 +13,7 @@ from flask_cors import CORS
 from PIL import Image
 from difflib import SequenceMatcher
 import socket
+import re
 
 load_dotenv()
 
@@ -80,23 +81,27 @@ GUJARAT_DISTRICTS = {
    "Valsad": {"lat": 20.5992, "lon": 72.9342}
 }
 
-# Enhanced district name mappings for better pronunciation recognition
 DISTRICT_NAME_VARIATIONS = {
-    # English variations and common pronunciations
     "ahmedabad": "Ahmedabad",
     "amdavad": "Ahmedabad",
     "ahmadabad": "Ahmedabad",
+    "ahmdabad": "Ahmedabad",
+    "ahemdabad": "Ahmedabad",
     "surat": "Surat",
+    "surath": "Surat",
+    "suraat": "Surat",
     "vadodara": "Vadodara",
     "baroda": "Vadodara",
-    "rajkot": "Rajkot",
+    "vadodra": "Vadodara",
     "rajkot": "Rajkot",
     "rajcot": "Rajkot",
+    "rajkott": "Rajkot",
+    "rajkoth": "Rajkot",
+    "raajkot": "Rajkot",
     "gandhinagar": "Gandhinagar",
     "jamnagar": "Jamnagar",
     "bhavnagar": "Bhavnagar",
     "junagadh": "Junagadh",
-    "mehsana": "Mehsana",
     "mehsana": "Mehsana",
     "patan": "Patan",
     "kutch": "Kutch",
@@ -125,11 +130,12 @@ DISTRICT_NAME_VARIATIONS = {
     "mahisagar": "Mahisagar",
     "chhota udaipur": "Chhota Udaipur",
     
-    # Gujarati district names
     "અમદાવાદ": "Ahmedabad",
     "સુરત": "Surat",
+    "સુરાત": "Surat",
     "વડોદરા": "Vadodara",
     "રાજકોટ": "Rajkot",
+    "રાજકોત": "Rajkot",
     "ગાંધીનગર": "Gandhinagar",
     "જામનગર": "Jamnagar",
     "ભાવનગર": "Bhavnagar",
@@ -160,7 +166,6 @@ DISTRICT_NAME_VARIATIONS = {
     "મહિસાગર": "Mahisagar",
     "છોટા ઉદયપુર": "Chhota Udaipur",
     
-    # Hindi district names
     "अहमदाबाद": "Ahmedabad",
     "सूरत": "Surat",
     "वडोदरा": "Vadodara",
@@ -185,6 +190,21 @@ DISTRICT_NAME_VARIATIONS = {
     "सुरेंद्रनगर": "Surendranagar",
     "मोरबी": "Morbi",
     "बोटाद": "Botad"
+}
+
+VEGETABLE_TRANSLATIONS = {
+    "બટાટા": "potato",
+    "બટેટા": "potato",
+    "બટાકા": "potato",
+    "ટામેટા": "tomato",
+    "ટમેટા": "tomato",
+    "ટમાટા": "tomato",
+    "કાંદો": "onion",
+    "કાંદા": "onion",
+    "ડુંગળી": "onion",
+    "आलू": "potato",
+    "टमाटर": "tomato",
+    "प्याज": "onion"
 }
 
 DISEASE_MESSAGES = {
@@ -230,7 +250,6 @@ RESTRICTED_QUERY_RESPONSE = {
 }
 
 def find_free_port():
-    """Find a free port starting from 5000"""
     for port in range(5000, 6000):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -238,7 +257,7 @@ def find_free_port():
                 return port
         except OSError:
             continue
-    return 5000  # fallback
+    return 5000
 
 def normalize_language_code(lang):
     lang = lang.lower().replace('-', '').replace('_', '')
@@ -313,7 +332,6 @@ def convert_image_to_supported_format(image_bytes):
        raise
 
 def translate_disease_text(text: str, target_language: str) -> str:
-    """Manual translation function for disease names"""
     try:
         if target_language == "en":
             return text
@@ -332,7 +350,7 @@ def translate_disease_text(text: str, target_language: str) -> str:
             elif text == "Tomato Early Blight":
                 return "टमाटर का शीघ्र झुलसा रोग"
             elif text == "Tomato Powdery Mildew":
-                return "टमाटर पाउडरी फफूंदी"
+                return "टमाटर पाउडरी ففूंदी"
             else:
                 return "अप्रासंगिक"
         else:
@@ -353,12 +371,10 @@ def translate_text(text, target_language):
        else:
            return text
        
-       # Clean and validate input text
        cleaned_text = text.strip()
        if not cleaned_text:
            return text
        
-       # Split long text into smaller chunks if needed
        max_chunk_length = 500
        if len(cleaned_text) > max_chunk_length:
            sentences = cleaned_text.split('\n')
@@ -374,25 +390,22 @@ def translate_text(text, target_language):
                                break
                        except Exception as e:
                            print(f"Sentence translation attempt {attempt + 1} failed: {e}")
-                           if attempt == 2:  # Last attempt
-                               translated_sentences.append(sentence)  # Keep original
+                           if attempt == 2:
+                               translated_sentences.append(sentence)
            
            return '\n'.join(translated_sentences)
        else:
-           # Try translation with retry mechanism for shorter text
            for attempt in range(3):
                try:
                    translated = translator.translate(cleaned_text)
                    if translated and len(translated.strip()) > 0:
-                       # Additional validation for completeness
-                       if len(translated.strip()) >= len(cleaned_text) * 0.3:  # At least 30% of original length
+                       if len(translated.strip()) >= len(cleaned_text) * 0.3:
                            return translated.strip()
                    print(f"Translation attempt {attempt + 1} incomplete for: {cleaned_text[:50]}...")
                except Exception as e:
                    print(f"Translation attempt {attempt + 1} error: {e}")
                    continue
            
-           # If all attempts fail, return original text
            print(f"All translation attempts failed for text: {cleaned_text[:50]}...")
            return text
            
@@ -449,14 +462,11 @@ def get_commodity_prices_internal(district, date_str, language):
        "api-key": "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b",
        "format": "json",
        "filters[State]": "Gujarat",
-       "limit": "1000"  # Increased limit to get more recent data
+       "limit": "5000"
    }
    
    if district:
        params["filters[District]"] = district
-   
-   # Enhanced date filtering - prioritize recent data
-   current_year = datetime.now().year
    
    try:
        response = requests.get(base_url, params=params)
@@ -465,44 +475,37 @@ def get_commodity_prices_internal(district, date_str, language):
        records = api_data.get('records', [])
        
        if records:
-           # Filter and sort records to get the most recent data
+           current_date = datetime.now()
            valid_records = []
            
            for record in records:
                arrival_date_str = record.get('Arrival_Date', '')
                if arrival_date_str:
                    try:
-                       # Parse date in DD/MM/YYYY format
                        arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
                        record['parsed_date'] = arrival_date
                        
-                       # Filter records from the last 3 years to get more relevant data
-                       if arrival_date.year >= (current_year - 3):
+                       if arrival_date.year >= 2023:
                            valid_records.append(record)
                    except ValueError:
-                       # Skip records with invalid date format
                        continue
            
-           # Sort by date (most recent first)
            valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
            
-           if not valid_records:
-               # If no recent records, try without date filtering but limit to recent years
-               for record in records[:50]:  # Check first 50 records
+           if not valid_records and records:
+               for record in records:
                    arrival_date_str = record.get('Arrival_Date', '')
                    if arrival_date_str:
                        try:
                            arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
-                           if arrival_date.year >= (current_year - 5):  # Expand to 5 years
-                               valid_records.append(record)
+                           record['parsed_date'] = arrival_date
+                           valid_records.append(record)
                        except ValueError:
                            continue
+               valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
            
            if valid_records:
-               records = valid_records[:10]  # Take top 10 most recent records
-           else:
-               # Fallback: take any available records but prefer recent ones
-               records = records[:5]
+               records = valid_records[:10]
        
        if not records:
            no_data_msg = "No recent commodity price data found for the selected criteria."
@@ -585,6 +588,7 @@ def is_query_allowed(text):
         'disease', 'crop', 'vegetable', 'farming', 'agriculture', 'plant',
         'potato', 'tomato', 'onion', 'cotton', 'wheat', 'rice',
         'હવામાન', 'તાપમાન', 'વરસાદ', 'કિંમત', 'બજાર', 'રોગ', 'ખેતી', 'બટાટા', 'ટમેટા',
+        'મૌસમ', 'આબોહવા', 'ભાવ', 'દર', 'માંડી', 'શાકભાજી',
         'मौसम', 'तापमान', 'बारिश', 'कीमत', 'बाजार', 'बीमारी', 'खेती', 'आलू', 'टमाटर'
     ]
     
@@ -603,6 +607,10 @@ def get_claude_response(message, context="", language="en"):
        return RESTRICTED_QUERY_RESPONSE[language]
    
    try:
+       for gu_word, en_word in VEGETABLE_TRANSLATIONS.items():
+           if gu_word in message:
+               message = message.replace(gu_word, en_word)
+       
        system_prompt = f"""You are a specialized assistant for Gujarat, India farmers. You ONLY help with:
 1. Weather forecasts for Gujarat districts
 2. Mandi commodity prices in Gujarat
@@ -614,8 +622,8 @@ STRICT RULES:
 - If asked about unrelated topics, respond: "{RESTRICTED_QUERY_RESPONSE[language]}"
 - Keep responses under 100 words
 - Focus only on Gujarat agriculture, weather, and mandi prices
-- When discussing commodity prices, acknowledge that data may be from recent years due to API limitations
-- For Gujarati queries about vegetables like બટાટા (potato), provide helpful agricultural information"""
+- When discussing commodity prices, provide helpful agricultural information
+- For vegetable price queries, acknowledge recent data availability"""
        
        full_context = f"{context}\n\nUser: {message}" if context else message
        
@@ -635,11 +643,9 @@ STRICT RULES:
 def similarity(a, b):
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-def find_closest_district(user_input, threshold=0.5):
-    """Enhanced district matching with better pronunciation handling"""
+def find_closest_district(user_input, threshold=0.4):
     user_input_lower = user_input.lower().strip()
     
-    # First, try exact matches from our enhanced variations
     if user_input_lower in DISTRICT_NAME_VARIATIONS:
         return {
             'district': DISTRICT_NAME_VARIATIONS[user_input_lower], 
@@ -647,24 +653,21 @@ def find_closest_district(user_input, threshold=0.5):
             'matched_text': user_input_lower
         }
     
-    # Check if any variation is contained in the user input
     for variation, district in DISTRICT_NAME_VARIATIONS.items():
         if variation in user_input_lower or user_input_lower in variation:
-            confidence = 0.9 if variation in user_input_lower else 0.8
+            confidence = 0.95 if len(variation) >= 4 and variation in user_input_lower else 0.85
             return {
                 'district': district,
                 'confidence': confidence,
                 'matched_text': variation
             }
     
-    # Fuzzy matching with all variations
     best_matches = []
     for variation, district in DISTRICT_NAME_VARIATIONS.items():
         full_similarity = similarity(user_input_lower, variation)
         
-        # Word-level matching for better results
         words = user_input_lower.split()
-        word_similarities = [similarity(word, variation) for word in words]
+        word_similarities = [similarity(word, variation) for word in words if len(word) > 2]
         max_word_similarity = max(word_similarities) if word_similarities else 0
         
         best_similarity = max(full_similarity, max_word_similarity)
@@ -678,7 +681,6 @@ def find_closest_district(user_input, threshold=0.5):
             })
     
     if best_matches:
-        # Sort by confidence and return the best match
         best_matches.sort(key=lambda x: x['similarity_score'], reverse=True)
         return best_matches[0]
     
@@ -694,22 +696,23 @@ def get_popular_districts_list(language):
     return popular_districts.get(language, popular_districts['en'])
 
 def extract_location_from_command(command):
-    """Enhanced location extraction with better pronunciation support"""
     command_lower = command.lower().strip()
     
-    # Try direct lookup first
-    location_info = find_closest_district(command_lower, threshold=0.5)
+    location_info = find_closest_district(command_lower, threshold=0.4)
     if location_info:
         return location_info
     
-    # Additional phonetic variations for common mispronunciations
     phonetic_variations = {
         'rajcot': 'Rajkot',
         'rajkott': 'Rajkot',
+        'rajkoth': 'Rajkot',
+        'raajkot': 'Rajkot',
         'surat': 'Surat',
         'surath': 'Surat',
+        'suraat': 'Surat',
         'ahmdabad': 'Ahmedabad',
         'ahemdabad': 'Ahmedabad',
+        'ahmadabad': 'Ahmedabad',
         'vadodra': 'Vadodara',
         'vadodara': 'Vadodara',
         'baroda': 'Vadodara'
@@ -737,7 +740,7 @@ def is_commodity_query(text_lower):
        'farming', 'harvest', 'produce', 'wholesale', 'retail',
        'potato', 'tomato', 'onion', 'cotton', 'wheat', 'rice',
        'किमत', 'दाम', 'मंडी', 'बाजार', 'फसल', 'खेती', 'आलू', 'टमाटर',
-       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી', 'બટાટા', 'ટમેટા'
+       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી', 'બટાટા', 'ટમેટા', 'ભાવ'
    ]
    return any(keyword in text_lower for keyword in commodity_keywords)
 
@@ -847,7 +850,6 @@ def handle_disease_detection(language):
            })
            disease_names.append(translated_name)
        
-       # Create a comprehensive response message
        if len(disease_names) == 1:
            if lang_code == 'hi':
                response_msg = f"पहचाना गया रोग: {disease_names[0]}"
@@ -895,7 +897,7 @@ def handle_weather_query(original_text, text_lower, language):
     try:
         location_info = extract_location_from_command(text_lower)
         
-        if location_info and location_info.get('confidence', 0) >= 0.7:
+        if location_info and location_info.get('confidence', 0) >= 0.5:
             district = location_info['district']
             coords = GUJARAT_DISTRICTS[district]
             weather_data = get_weather_data(coords['lat'], coords['lon'])
@@ -937,7 +939,7 @@ def handle_weather_query(original_text, text_lower, language):
                     status=500
                 )
         
-        elif location_info and location_info.get('confidence', 0) > 0.4:
+        elif location_info and location_info.get('confidence', 0) > 0.3:
             district = location_info['district']
             did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
             
@@ -989,7 +991,7 @@ def handle_commodity_query(original_text, text_lower, language):
        district = None
        location_info = extract_location_from_command(text_lower)
        
-       if location_info and location_info.get('confidence', 0) >= 0.7:
+       if location_info and location_info.get('confidence', 0) >= 0.5:
            district = location_info['district']
        
        date_str = None
@@ -1016,7 +1018,6 @@ def handle_general_chat(text, language):
                status=200
            )
        
-       # Enhance context for Gujarati vegetable queries
        enhanced_context = ""
        if language == 'gu' and any(veg in text.lower() for veg in ['બટાટા', 'ટમેટા', 'કાંદો']):
            enhanced_context = "User is asking about vegetables in Gujarati. Provide helpful agricultural information."
@@ -1117,19 +1118,18 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.2.0",
-           "description": "Enhanced intelligent API for Gujarat agriculture - weather, commodity prices, and disease detection with improved pronunciation handling",
+           "version": "3.3.0",
+           "description": "Fixed intelligent API for Gujarat agriculture - weather, commodity prices, and disease detection",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
-               "Enhanced pronunciation recognition for district names",
-               "Improved date filtering for commodity prices",
-               "Better Gujarati language support for vegetable queries",
+               "Fixed pronunciation recognition for district names",
+               "Latest commodity/Mandi price filtering (2023+)",
+               "Enhanced Gujarati vegetable query support",
                "Weather information for Gujarat districts",
-               "Recent commodity/Mandi price information",
                "Vegetable disease detection using AI",
                "Multi-language support with proper translation",
-               "Fuzzy district name matching for voice input"
+               "Improved fuzzy district name matching"
            ]
        }, 
        status=200
@@ -1138,7 +1138,7 @@ def root():
 if __name__ == '__main__':
     port = find_free_port()
     
-    print(f"\n🚀 Starting Enhanced Gujarat Smart Assistant API...")
+    print(f"\n🚀 Starting Fixed Gujarat Smart Assistant API...")
     print(f"🌐 Running on: http://localhost:{port}")
     print(f"📍 Main endpoint: http://localhost:{port}/smart_assistant")
     print(f"🏥 Health check: http://localhost:{port}/health")
