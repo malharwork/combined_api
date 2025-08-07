@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import os
 import io
 import boto3
-from datetime import datetime
+from datetime import datetime, timedelta
 import anthropic
 from deep_translator import GoogleTranslator
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ import base64
 from flask_cors import CORS
 from PIL import Image
 from difflib import SequenceMatcher
-import re
+import socket
 
 load_dotenv()
 
@@ -79,115 +80,111 @@ GUJARAT_DISTRICTS = {
    "Valsad": {"lat": 20.5992, "lon": 72.9342}
 }
 
-COMMODITY_MAPPING = {
-    'tomato': 'Tomato',
-    'onion': 'Onion',
-    'potato': 'Potato',
-    'brinjal': 'Brinjal',
-    'eggplant': 'Brinjal',
-    'okra': 'Bhindi',
-    'ladyfinger': 'Bhindi',
-    'cabbage': 'Cabbage',
-    'cauliflower': 'Cauliflower',
-    'carrot': 'Carrot',
-    'beans': 'Beans',
-    'peas': 'Peas',
-    'spinach': 'Spinach',
-    'coriander': 'Coriander',
-    'mint': 'Mint',
-    'chilli': 'Chili',
-    'chili': 'Chili',
-    'pepper': 'Chili',
-    'garlic': 'Garlic',
-    'ginger': 'Ginger',
-    'cucumber': 'Cucumber',
-    'bottle gourd': 'Bottle gourd',
-    'ridge gourd': 'Ridge gourd',
-    'bitter gourd': 'Bitter gourd',
-    'pumpkin': 'Pumpkin',
-    'wheat': 'Wheat',
-    'rice': 'Rice',
-    'bajra': 'Bajra',
-    'jowar': 'Jowar',
-    'cotton': 'Cotton',
-    'groundnut': 'Groundnut',
-    'peanut': 'Groundnut',
-    'sesame': 'Sesame',
-    'mustard': 'Mustard',
-    'cumin': 'Cumin',
-    'coriander seed': 'Coriander seed',
-    'turmeric': 'Turmeric',
-    'fenugreek': 'Fenugreek',
-    'castor seed': 'Castor seed',
-    'टमाटर': 'Tomato',
-    'प्याज': 'Onion',
-    'आलू': 'Potato',
-    'बैंगन': 'Brinjal',
-    'भिंडी': 'Bhindi',
-    'पत्तागोभी': 'Cabbage',
-    'फूलगोभी': 'Cauliflower',
-    'गाजर': 'Carrot',
-    'बीन्स': 'Beans',
-    'मटर': 'Peas',
-    'पालक': 'Spinach',
-    'धनिया': 'Coriander',
-    'पुदीना': 'Mint',
-    'मिर्च': 'Chili',
-    'लहसुन': 'Garlic',
-    'अदरक': 'Ginger',
-    'खीरा': 'Cucumber',
-    'लौकी': 'Bottle gourd',
-    'तोरी': 'Ridge gourd',
-    'करेला': 'Bitter gourd',
-    'कद्दू': 'Pumpkin',
-    'गेहूं': 'Wheat',
-    'चावल': 'Rice',
-    'बाजरा': 'Bajra',
-    'ज्वार': 'Jowar',
-    'कपास': 'Cotton',
-    'मूंगफली': 'Groundnut',
-    'तिल': 'Sesame',
-    'सरसों': 'Mustard',
-    'जीरा': 'Cumin',
-    'धनिया बीज': 'Coriander seed',
-    'हल्दी': 'Turmeric',
-    'मेथी': 'Fenugreek',
-    'अरंडी': 'Castor seed',
-    'ટમેટા': 'Tomato',
-    'ટમાટર': 'Tomato',
-    'ડુંગળી': 'Onion',
-    'બટાકા': 'Potato',
-    'રીંગણ': 'Brinjal',
-    'ભીંડા': 'Bhindi',
-    'કોબી': 'Cabbage',
-    'ફૂલકોબી': 'Cauliflower',
-    'ગાજર': 'Carrot',
-    'શીંગ': 'Beans',
-    'વટાણા': 'Peas',
-    'પાલક': 'Spinach',
-    'કોથમીર': 'Coriander',
-    'ફુદીનો': 'Mint',
-    'મરચું': 'Chili',
-    'લસણ': 'Garlic',
-    'આદુ': 'Ginger',
-    'કાકડી': 'Cucumber',
-    'દૂધી': 'Bottle gourd',
-    'તુરીયા': 'Ridge gourd',
-    'કારેલા': 'Bitter gourd',
-    'કોળું': 'Pumpkin',
-    'ઘઉં': 'Wheat',
-    'ચોખા': 'Rice',
-    'બાજરી': 'Bajra',
-    'જુવાર': 'Jowar',
-    'કપાસ': 'Cotton',
-    'મગફળી': 'Groundnut',
-    'તલ': 'Sesame',
-    'સરસવ': 'Mustard',
-    'જીરું': 'Cumin',
-    'કોથમીર બીજ': 'Coriander seed',
-    'હળદર': 'Turmeric',
-    'મેથી': 'Fenugreek',
-    'એરંડ': 'Castor seed'
+# Enhanced district name mappings for better pronunciation recognition
+DISTRICT_NAME_VARIATIONS = {
+    # English variations and common pronunciations
+    "ahmedabad": "Ahmedabad",
+    "amdavad": "Ahmedabad",
+    "ahmadabad": "Ahmedabad",
+    "surat": "Surat",
+    "vadodara": "Vadodara",
+    "baroda": "Vadodara",
+    "rajkot": "Rajkot",
+    "rajkot": "Rajkot",
+    "rajcot": "Rajkot",
+    "gandhinagar": "Gandhinagar",
+    "jamnagar": "Jamnagar",
+    "bhavnagar": "Bhavnagar",
+    "junagadh": "Junagadh",
+    "mehsana": "Mehsana",
+    "mehsana": "Mehsana",
+    "patan": "Patan",
+    "kutch": "Kutch",
+    "kachchh": "Kutch",
+    "kuch": "Kutch",
+    "anand": "Anand",
+    "kheda": "Kheda",
+    "bharuch": "Bharuch",
+    "narmada": "Narmada",
+    "dahod": "Dahod",
+    "panchmahal": "Panchmahal",
+    "sabarkantha": "Sabarkantha",
+    "banaskantha": "Banaskantha",
+    "amreli": "Amreli",
+    "porbandar": "Porbandar",
+    "surendranagar": "Surendranagar",
+    "morbi": "Morbi",
+    "botad": "Botad",
+    "gir somnath": "Gir Somnath",
+    "devbhoomi dwarka": "Devbhoomi Dwarka",
+    "navsari": "Navsari",
+    "valsad": "Valsad",
+    "tapi": "Tapi",
+    "dang": "Dang",
+    "aravalli": "Aravalli",
+    "mahisagar": "Mahisagar",
+    "chhota udaipur": "Chhota Udaipur",
+    
+    # Gujarati district names
+    "અમદાવાદ": "Ahmedabad",
+    "સુરત": "Surat",
+    "વડોદરા": "Vadodara",
+    "રાજકોટ": "Rajkot",
+    "ગાંધીનગર": "Gandhinagar",
+    "જામનગર": "Jamnagar",
+    "ભાવનગર": "Bhavnagar",
+    "જૂનાગઢ": "Junagadh",
+    "મહેસાણા": "Mehsana",
+    "પાટણ": "Patan",
+    "કચ્છ": "Kutch",
+    "આણંદ": "Anand",
+    "ખેડા": "Kheda",
+    "ભરૂચ": "Bharuch",
+    "નર્મદા": "Narmada",
+    "દાહોદ": "Dahod",
+    "પંચમહાલ": "Panchmahal",
+    "સાબરકાંઠા": "Sabarkantha",
+    "બનાસકાંઠા": "Banaskantha",
+    "અમરેલી": "Amreli",
+    "પોરબંદર": "Porbandar",
+    "સુરેન્દ્રનગર": "Surendranagar",
+    "મોરબી": "Morbi",
+    "બોટાદ": "Botad",
+    "ગીર સોમનાથ": "Gir Somnath",
+    "દેવભૂમિ દ્વારકા": "Devbhoomi Dwarka",
+    "નવસારી": "Navsari",
+    "વલસાડ": "Valsad",
+    "તાપી": "Tapi",
+    "દાંગ": "Dang",
+    "અરાવલી": "Aravalli",
+    "મહિસાગર": "Mahisagar",
+    "છોટા ઉદયપુર": "Chhota Udaipur",
+    
+    # Hindi district names
+    "अहमदाबाद": "Ahmedabad",
+    "सूरत": "Surat",
+    "वडोदरा": "Vadodara",
+    "राजकोट": "Rajkot",
+    "गांधीनगर": "Gandhinagar",
+    "जामनगर": "Jamnagar",
+    "भावनगर": "Bhavnagar",
+    "जूनागढ": "Junagadh",
+    "मेहसाना": "Mehsana",
+    "पाटण": "Patan",
+    "कच्छ": "Kutch",
+    "आणंद": "Anand",
+    "खेडा": "Kheda",
+    "भरूच": "Bharuch",
+    "नर्मदा": "Narmada",
+    "दाहोद": "Dahod",
+    "पंचमहाल": "Panchmahal",
+    "साबरकांठा": "Sabarkantha",
+    "बनासकांठा": "Banaskantha",
+    "अमरेली": "Amreli",
+    "पोरबंदर": "Porbandar",
+    "सुरेंद्रनगर": "Surendranagar",
+    "मोरबी": "Morbi",
+    "बोटाद": "Botad"
 }
 
 DISEASE_MESSAGES = {
@@ -223,21 +220,6 @@ DISTRICT_ERROR_MESSAGES = {
         "en": "Did you mean",
         "hi": "क्या आपका मतलब था",
         "gu": "શું તમારો મતલબ હતો"
-    },
-    "commodity_not_found": {
-        "en": "I couldn't find that commodity. Please check the spelling or try searching for common vegetables like tomato, onion, potato.",
-        "hi": "मुझे वह कमोडिटी नहीं मिली। कृपया वर्तनी जांचें या टमाटर, प्याज, आलू जैसी सामान्य सब्जियों की खोज करें।",
-        "gu": "મને તે કોમોડિટી મળી નથી. કૃપા કરીને સ્પેલિંગ તપાસો અથવા ટમેટા, ડુંગળી, બટાકા જેવી સામાન્ય શાકભાજીની શોધ કરો."
-    },
-    "district_required": {
-        "en": "Please specify a Gujarat district to get commodity prices. For example: 'tomato price in Ahmedabad' or 'onion rates in Surat'",
-        "hi": "कृपया कमोडिटी की कीमतें पाने के लिए गुजरात जिला निर्दिष्ट करें। उदाहरण: 'अहमदाबाद में टमाटर की कीमत' या 'सूरत में प्याज के दाम'",
-        "gu": "કૃપા કરીને કોમોડિટીના ભાવ મેળવવા માટે ગુજરાત જિલ્લો સ્પષ્ટ કરો. ઉદાહરણ: 'અમદાવાદમાં ટમેટાની કિંમત' અથવા 'સુરતમાં ડુંગળીના રેટ'"
-    },
-    "commodity_required": {
-        "en": "Please specify which commodity/vegetable price you want to check. For example: 'tomato price in Ahmedabad' or 'onion rates in Surat'",
-        "hi": "कृपया बताएं कि आप किस कमोडिटी/सब्जी की कीमत जांचना चाहते हैं। उदाहरण: 'अहमदाबाद में टमाटर की कीमत' या 'सूरत में प्याज के दाम'",
-        "gu": "કૃપા કરીને સ્પષ્ટ કરો કે તમે કઈ કોમોડિટી/શાકભાજીની કિંમત તપાસવા માંગો છો. ઉદાહરણ: 'અમદાવાદમાં ટમેટાની કિંમત' અથવા 'સુરતમાં ડુંગળીના રેટ'"
     }
 }
 
@@ -246,6 +228,17 @@ RESTRICTED_QUERY_RESPONSE = {
     "hi": "मैं केवल गुजरात के लिए मौसम पूर्वानुमान, मंडी कमोडिटी की कीमतें और सब्जी रोग का पता लगाने में मदद कर सकता हूं। कृपया केवल इन विषयों के बारे में पूछें।",
     "gu": "હું ફક્ત ગુજરાત માટે હવામાન આગાહી, માંડી કોમોડિટી ભાવ અને શાકભાજીના રોગોની ઓળખ માટે જ મદદ કરી શકું છું. કૃપા કરીને ફક્ત આ વિષયો વિશે જ પૂછો."
 }
+
+def find_free_port():
+    """Find a free port starting from 5000"""
+    for port in range(5000, 6000):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('localhost', port))
+                return port
+        except OSError:
+            continue
+    return 5000  # fallback
 
 def normalize_language_code(lang):
     lang = lang.lower().replace('-', '').replace('_', '')
@@ -320,6 +313,7 @@ def convert_image_to_supported_format(image_bytes):
        raise
 
 def translate_disease_text(text: str, target_language: str) -> str:
+    """Manual translation function for disease names"""
     try:
         if target_language == "en":
             return text
@@ -359,10 +353,12 @@ def translate_text(text, target_language):
        else:
            return text
        
+       # Clean and validate input text
        cleaned_text = text.strip()
        if not cleaned_text:
            return text
        
+       # Split long text into smaller chunks if needed
        max_chunk_length = 500
        if len(cleaned_text) > max_chunk_length:
            sentences = cleaned_text.split('\n')
@@ -378,22 +374,25 @@ def translate_text(text, target_language):
                                break
                        except Exception as e:
                            print(f"Sentence translation attempt {attempt + 1} failed: {e}")
-                           if attempt == 2:
-                               translated_sentences.append(sentence)
+                           if attempt == 2:  # Last attempt
+                               translated_sentences.append(sentence)  # Keep original
            
            return '\n'.join(translated_sentences)
        else:
+           # Try translation with retry mechanism for shorter text
            for attempt in range(3):
                try:
                    translated = translator.translate(cleaned_text)
                    if translated and len(translated.strip()) > 0:
-                       if len(translated.strip()) >= len(cleaned_text) * 0.3:
+                       # Additional validation for completeness
+                       if len(translated.strip()) >= len(cleaned_text) * 0.3:  # At least 30% of original length
                            return translated.strip()
                    print(f"Translation attempt {attempt + 1} incomplete for: {cleaned_text[:50]}...")
                except Exception as e:
                    print(f"Translation attempt {attempt + 1} error: {e}")
                    continue
            
+           # If all attempts fail, return original text
            print(f"All translation attempts failed for text: {cleaned_text[:50]}...")
            return text
            
@@ -444,70 +443,70 @@ def format_weather_response(data, district):
    
    return response
 
-def extract_commodity_from_text(text):
-    text_lower = text.lower().strip()
-    
-    for key, value in COMMODITY_MAPPING.items():
-        if key.lower() in text_lower:
-            return value
-    
-    best_match = None
-    best_score = 0.6
-    
-    for key, value in COMMODITY_MAPPING.items():
-        words = text_lower.split()
-        for word in words:
-            score = similarity(word, key.lower())
-            if score > best_score:
-                best_match = value
-                best_score = score
-    
-    return best_match
-
-def get_commodity_prices_internal(district, date_str, language, commodity=None):
+def get_commodity_prices_internal(district, date_str, language):
    base_url = "https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24"
    params = {
        "api-key": "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b",
        "format": "json",
        "filters[State]": "Gujarat",
-       "limit": "100"
+       "limit": "1000"  # Increased limit to get more recent data
    }
    
    if district:
        params["filters[District]"] = district
    
-   if commodity:
-       params["filters[Commodity]"] = commodity
-       print(f"Filtering by commodity: {commodity}")
-   
-   if date_str:
-       try:
-           date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-           formatted_date = date_obj.strftime('%d/%m/%Y')
-           params["filters[Arrival_Date]"] = formatted_date
-       except ValueError:
-           pass
+   # Enhanced date filtering - prioritize recent data
+   current_year = datetime.now().year
    
    try:
-       print(f"API Request params: {params}")
        response = requests.get(base_url, params=params)
        response.raise_for_status()
        api_data = response.json()
        records = api_data.get('records', [])
        
-       print(f"Found {len(records)} records")
+       if records:
+           # Filter and sort records to get the most recent data
+           valid_records = []
+           
+           for record in records:
+               arrival_date_str = record.get('Arrival_Date', '')
+               if arrival_date_str:
+                   try:
+                       # Parse date in DD/MM/YYYY format
+                       arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
+                       record['parsed_date'] = arrival_date
+                       
+                       # Filter records from the last 3 years to get more relevant data
+                       if arrival_date.year >= (current_year - 3):
+                           valid_records.append(record)
+                   except ValueError:
+                       # Skip records with invalid date format
+                       continue
+           
+           # Sort by date (most recent first)
+           valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
+           
+           if not valid_records:
+               # If no recent records, try without date filtering but limit to recent years
+               for record in records[:50]:  # Check first 50 records
+                   arrival_date_str = record.get('Arrival_Date', '')
+                   if arrival_date_str:
+                       try:
+                           arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
+                           if arrival_date.year >= (current_year - 5):  # Expand to 5 years
+                               valid_records.append(record)
+                       except ValueError:
+                           continue
+           
+           if valid_records:
+               records = valid_records[:10]  # Take top 10 most recent records
+           else:
+               # Fallback: take any available records but prefer recent ones
+               records = records[:5]
        
        if not records:
-           no_data_msg = "No commodity price data found for the selected criteria."
-           if commodity:
-               if language == 'hi':
-                   no_data_msg = f"{commodity} के लिए कोई मंडी भाव नहीं मिला।"
-               elif language == 'gu':
-                   no_data_msg = f"{commodity} માટે કોઈ માંડી ભાવ મળ્યો નથી."
-               else:
-                   no_data_msg = f"No mandi prices found for {commodity}."
-           
-           if language != 'en' and not commodity:
+           no_data_msg = "No recent commodity price data found for the selected criteria."
+           if language != 'en':
                try:
                    no_data_msg = translate_text(no_data_msg, language)
                except:
@@ -518,17 +517,12 @@ def get_commodity_prices_internal(district, date_str, language, commodity=None):
                data={
                    "type": "commodity",
                    "response": no_data_msg, 
-                   "records": [],
-                   "filters_applied": {
-                       "district": district,
-                       "commodity": commodity,
-                       "date": date_str
-                   }
+                   "records": []
                }, 
                status=200
            )
        else:
-           response_text = format_commodity_response(records, district, date_str, commodity)
+           response_text = format_commodity_response(records, district, date_str)
        
        if language != 'en':
            try:
@@ -541,78 +535,41 @@ def get_commodity_prices_internal(district, date_str, language, commodity=None):
            data={
                "type": "commodity",
                "response": response_text, 
-               "records": records,
-               "total_records": len(records),
-               "filters_applied": {
-                   "district": district,
-                   "commodity": commodity,
-                   "date": date_str
-               }
+               "records": records
            }, 
            status=200
        )
        
    except Exception as e:
-       print(f"Commodity API error: {e}")
        return create_response(
            "Failed to retrieve commodity prices", 
            error=f"Error fetching commodity data: {e}", 
            status=500
        )
 
-def format_commodity_response(records, district, date, commodity=None):
+def format_commodity_response(records, district, date):
    if not records:
        return "No commodity price data found."
    
-   response = f"Commodity prices"
-   if commodity:
-       response += f" for {commodity}"
+   response = f"Recent commodity prices"
    if district:
        response += f" in {district}, Gujarat"
-   if date:
-       response += f" for {date}"
    response += ":\n\n"
    
-   commodity_groups = {}
-   for record in records:
-       comm_name = record.get('Commodity', 'Unknown')
-       if comm_name not in commodity_groups:
-           commodity_groups[comm_name] = []
-       commodity_groups[comm_name].append(record)
+   for i, record in enumerate(records[:5]):
+       arrival_date = record.get('Arrival_Date', 'N/A')
+       response += f"{i+1}. {record.get('Commodity', 'N/A')} ({record.get('Variety', 'N/A')})\n"
+       response += f"   Market: {record.get('Market', 'N/A')}\n"
+       response += f"   Date: {arrival_date}\n"
+       response += f"   Price Range: ₹{record.get('Min_Price', 'N/A')} - ₹{record.get('Max_Price', 'N/A')}\n"
+       response += f"   Modal Price: ₹{record.get('Modal_Price', 'N/A')}\n\n"
    
-   count = 0
-   max_display = 10
+   if len(records) > 5:
+       response += f"... and {len(records) - 5} more items.\n"
    
-   for comm_name, comm_records in commodity_groups.items():
-       if count >= max_display:
-           break
-           
-       response += f"📊 {comm_name}:\n"
-       
-       for i, record in enumerate(comm_records[:3]):
-           count += 1
-           response += f"   • Market: {record.get('Market', 'N/A')}\n"
-           if record.get('Variety', 'N/A') != 'N/A':
-               response += f"     Variety: {record.get('Variety', 'N/A')}\n"
-           response += f"     Price Range: ₹{record.get('Min_Price', 'N/A')} - ₹{record.get('Max_Price', 'N/A')}\n"
-           response += f"     Modal Price: ₹{record.get('Modal_Price', 'N/A')}\n"
-           if record.get('Arrival_Date'):
-               response += f"     Date: {record.get('Arrival_Date', 'N/A')}\n"
-           response += "\n"
-           
-           if count >= max_display:
-               break
-       
-       if len(comm_records) > 3:
-           response += f"   ... and {len(comm_records) - 3} more markets for {comm_name}\n\n"
-   
-   if len(records) > max_display:
-       response += f"... and {len(records) - count} more records available.\n"
+   response += "\nNote: Prices shown are from the most recent available data."
    
    return response
-
-def similarity(a, b):
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 def is_query_allowed(text):
     restricted_keywords = [
@@ -626,8 +583,9 @@ def is_query_allowed(text):
         'weather', 'temperature', 'rain', 'forecast', 'climate', 'humid', 'wind',
         'price', 'commodity', 'market', 'cost', 'rate', 'mandi', 'bazaar',
         'disease', 'crop', 'vegetable', 'farming', 'agriculture', 'plant',
-        'હવામાન', 'તાપમાન', 'વરસાદ', 'કિંમત', 'બજાર', 'રોગ', 'ખેતી',
-        'मौसम', 'तापमान', 'बारिश', 'कीमत', 'बाजार', 'बीमारी', 'खेती'
+        'potato', 'tomato', 'onion', 'cotton', 'wheat', 'rice',
+        'હવામાન', 'તાપમાન', 'વરસાદ', 'કિંમત', 'બજાર', 'રોગ', 'ખેતી', 'બટાટા', 'ટમેટા',
+        'मौसम', 'तापमान', 'बारिश', 'कीमत', 'बाजार', 'बीमारी', 'खेती', 'आलू', 'टमाटर'
     ]
     
     text_lower = text.lower()
@@ -655,7 +613,9 @@ STRICT RULES:
 - Do NOT answer questions about: jokes, stories, general knowledge, technology, politics, entertainment, or any non-agricultural topics
 - If asked about unrelated topics, respond: "{RESTRICTED_QUERY_RESPONSE[language]}"
 - Keep responses under 100 words
-- Focus only on Gujarat agriculture, weather, and mandi prices"""
+- Focus only on Gujarat agriculture, weather, and mandi prices
+- When discussing commodity prices, acknowledge that data may be from recent years due to API limitations
+- For Gujarati queries about vegetables like બટાટા (potato), provide helpful agricultural information"""
        
        full_context = f"{context}\n\nUser: {message}" if context else message
        
@@ -672,85 +632,53 @@ STRICT RULES:
        print(f"Error with Claude API: {e}")
        return "Sorry, I'm having trouble processing your request."
 
-def find_closest_district(user_input, threshold=0.6):
+def similarity(a, b):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+def find_closest_district(user_input, threshold=0.5):
+    """Enhanced district matching with better pronunciation handling"""
     user_input_lower = user_input.lower().strip()
     
-    all_districts = {}
+    # First, try exact matches from our enhanced variations
+    if user_input_lower in DISTRICT_NAME_VARIATIONS:
+        return {
+            'district': DISTRICT_NAME_VARIATIONS[user_input_lower], 
+            'confidence': 1.0, 
+            'matched_text': user_input_lower
+        }
     
-    for district in GUJARAT_DISTRICTS:
-        all_districts[district] = district
+    # Check if any variation is contained in the user input
+    for variation, district in DISTRICT_NAME_VARIATIONS.items():
+        if variation in user_input_lower or user_input_lower in variation:
+            confidence = 0.9 if variation in user_input_lower else 0.8
+            return {
+                'district': district,
+                'confidence': confidence,
+                'matched_text': variation
+            }
     
-    gujarati_districts = {
-        'અમદાવાદ': 'Ahmedabad',
-        'અમરેલી': 'Amreli', 
-        'આણંદ': 'Anand',
-        'અરાવલી': 'Aravalli',
-        'બનાસકાંઠા': 'Banaskantha',
-        'ભરૂચ': 'Bharuch',
-        'ભાવનગર': 'Bhavnagar',
-        'બોટાદ': 'Botad',
-        'છોટા ઉદયપુર': 'Chhota Udaipur',
-        'દાહોદ': 'Dahod',
-        'દાંગ': 'Dang',
-        'દેવભૂમિ દ્વારકા': 'Devbhoomi Dwarka',
-        'ગાંધીનગર': 'Gandhinagar',
-        'ગીર સોમનાથ': 'Gir Somnath',
-        'જામનગર': 'Jamnagar',
-        'જૂનાગઢ': 'Junagadh',
-        'ખેડા': 'Kheda',
-        'કચ્છ': 'Kutch',
-        'મહિસાગર': 'Mahisagar',
-        'મહેસાણા': 'Mehsana',
-        'મોરબી': 'Morbi',
-        'નર્મદા': 'Narmada',
-        'નવસારી': 'Navsari',
-        'પંચમહાલ': 'Panchmahal',
-        'પાટણ': 'Patan',
-        'પોરબંદર': 'Porbandar',
-        'રાજકોટ': 'Rajkot',
-        'સાબરકાંઠા': 'Sabarkantha',
-        'સુરત': 'Surat',
-        'સુરેન્દ્રનગર': 'Surendranagar',
-        'તાપી': 'Tapi',
-        'વડોદરા': 'Vadodara',
-        'વલસાડ': 'Valsad'
-    }
-    
-    for gujarati_name, english_name in gujarati_districts.items():
-        all_districts[gujarati_name] = english_name
-    
-    district_variations = {
-        'amdavad': 'Ahmedabad',
-        'baroda': 'Vadodara',
-        'kachchh': 'Kutch'
-    }
-    
-    for variation, district in district_variations.items():
-        all_districts[variation] = district
-    
-    for name, english_name in all_districts.items():
-        if name.lower() in user_input_lower:
-            return {'district': english_name, 'confidence': 1.0, 'matched_text': name}
-    
+    # Fuzzy matching with all variations
     best_matches = []
-    for name, english_name in all_districts.items():
-        full_similarity = similarity(user_input_lower, name.lower())
+    for variation, district in DISTRICT_NAME_VARIATIONS.items():
+        full_similarity = similarity(user_input_lower, variation)
         
+        # Word-level matching for better results
         words = user_input_lower.split()
-        word_similarities = [similarity(word, name.lower()) for word in words]
+        word_similarities = [similarity(word, variation) for word in words]
         max_word_similarity = max(word_similarities) if word_similarities else 0
         
         best_similarity = max(full_similarity, max_word_similarity)
         
         if best_similarity >= threshold:
             best_matches.append({
-                'district': english_name,
+                'district': district,
                 'confidence': best_similarity,
-                'matched_text': name,
+                'matched_text': variation,
                 'similarity_score': best_similarity
             })
     
     if best_matches:
+        # Sort by confidence and return the best match
         best_matches.sort(key=lambda x: x['similarity_score'], reverse=True)
         return best_matches[0]
     
@@ -765,73 +693,33 @@ def get_popular_districts_list(language):
     
     return popular_districts.get(language, popular_districts['en'])
 
-def get_popular_commodities_list(language):
-    popular_commodities = {
-        'en': ['Tomato', 'Onion', 'Potato', 'Brinjal', 'Bhindi', 'Cabbage'],
-        'hi': ['टमाटर', 'प्याज', 'आलू', 'बैंगन', 'भिंडी', 'पत्तागोभी'],
-        'gu': ['ટમેટા', 'ડુંગળી', 'બટાકા', 'રીંગણ', 'ભીંડા', 'કોબી']
-    }
-    
-    return popular_commodities.get(language, popular_commodities['en'])
-
 def extract_location_from_command(command):
+    """Enhanced location extraction with better pronunciation support"""
     command_lower = command.lower().strip()
     
-    gujarati_districts = {
-        'અમદાવાદ': 'Ahmedabad',
-        'અમરેલી': 'Amreli', 
-        'આણંદ': 'Anand',
-        'અરાવલી': 'Aravalli',
-        'બનાસકાંઠા': 'Banaskantha',
-        'ભરૂચ': 'Bharuch',
-        'ભાવનગર': 'Bhavnagar',
-        'બોટાદ': 'Botad',
-        'છોટા ઉદયપુર': 'Chhota Udaipur',
-        'દાહોદ': 'Dahod',
-        'દાંગ': 'Dang',
-        'દેવભૂમિ દ્વારકા': 'Devbhoomi Dwarka',
-        'ગાંધીનગર': 'Gandhinagar',
-        'ગીર સોમનાથ': 'Gir Somnath',
-        'જામનગર': 'Jamnagar',
-        'જૂનાગઢ': 'Junagadh',
-        'ખેડા': 'Kheda',
-        'કચ્છ': 'Kutch',
-        'મહિસાગર': 'Mahisagar',
-        'મહેસાણા': 'Mehsana',
-        'મોરબી': 'Morbi',
-        'નર્મદા': 'Narmada',
-        'નવસારી': 'Navsari',
-        'પંચમહાલ': 'Panchmahal',
-        'પાટણ': 'Patan',
-        'પોરબંદર': 'Porbandar',
-        'રાજકોટ': 'Rajkot',
-        'સાબરકાંઠા': 'Sabarkantha',
-        'સુરત': 'Surat',
-        'સુરેન્દ્રનગર': 'Surendranagar',
-        'તાપી': 'Tapi',
-        'વડોદરા': 'Vadodara',
-        'વલસાડ': 'Valsad'
+    # Try direct lookup first
+    location_info = find_closest_district(command_lower, threshold=0.5)
+    if location_info:
+        return location_info
+    
+    # Additional phonetic variations for common mispronunciations
+    phonetic_variations = {
+        'rajcot': 'Rajkot',
+        'rajkott': 'Rajkot',
+        'surat': 'Surat',
+        'surath': 'Surat',
+        'ahmdabad': 'Ahmedabad',
+        'ahemdabad': 'Ahmedabad',
+        'vadodra': 'Vadodara',
+        'vadodara': 'Vadodara',
+        'baroda': 'Vadodara'
     }
     
-    for gujarati_name, english_name in gujarati_districts.items():
-        if gujarati_name in command_lower:
-            return {'district': english_name, 'confidence': 1.0}
+    for phonetic, district in phonetic_variations.items():
+        if phonetic in command_lower:
+            return {'district': district, 'confidence': 0.9}
     
-    for district in GUJARAT_DISTRICTS:
-        if district.lower() in command_lower:
-            return {'district': district, 'confidence': 1.0}
-    
-    district_variations = {
-        'amdavad': 'Ahmedabad',
-        'baroda': 'Vadodara',
-        'kachchh': 'Kutch'
-    }
-    
-    for variation, district in district_variations.items():
-        if variation in command_lower:
-            return {'district': district, 'confidence': 1.0}
-    
-    return find_closest_district(command)
+    return None
 
 def is_weather_query(text_lower):
    weather_keywords = [
@@ -847,8 +735,9 @@ def is_commodity_query(text_lower):
        'price', 'commodity', 'market', 'cost', 'rate', 'mandi', 'bazaar',
        'sell', 'buy', 'crops', 'vegetables', 'fruits', 'agriculture',
        'farming', 'harvest', 'produce', 'wholesale', 'retail',
-       'किमत', 'दाम', 'मंडी', 'बाजार', 'फसल', 'खेती',
-       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી', 'ભાવ'
+       'potato', 'tomato', 'onion', 'cotton', 'wheat', 'rice',
+       'किमत', 'दाम', 'मंडी', 'बाजार', 'फसल', 'खेती', 'आलू', 'टमाटर',
+       'કિંમત', 'દર', 'માંડી', 'બજાર', 'પાક', 'ખેતી', 'બટાટા', 'ટમેટા'
    ]
    return any(keyword in text_lower for keyword in commodity_keywords)
 
@@ -958,6 +847,7 @@ def handle_disease_detection(language):
            })
            disease_names.append(translated_name)
        
+       # Create a comprehensive response message
        if len(disease_names) == 1:
            if lang_code == 'hi':
                response_msg = f"पहचाना गया रोग: {disease_names[0]}"
@@ -1005,7 +895,7 @@ def handle_weather_query(original_text, text_lower, language):
     try:
         location_info = extract_location_from_command(text_lower)
         
-        if location_info and location_info.get('confidence', 0) >= 0.8:
+        if location_info and location_info.get('confidence', 0) >= 0.7:
             district = location_info['district']
             coords = GUJARAT_DISTRICTS[district]
             weather_data = get_weather_data(coords['lat'], coords['lon'])
@@ -1013,7 +903,7 @@ def handle_weather_query(original_text, text_lower, language):
             if weather_data:
                 response = format_weather_response(weather_data, district)
                 
-                if location_info.get('confidence', 1.0) < 1.0:
+                if location_info.get('confidence', 1.0) < 0.9:
                     did_you_mean = DISTRICT_ERROR_MESSAGES["did_you_mean"][language]
                     response = f"({did_you_mean} {district}?)\n\n" + response
                 
@@ -1029,7 +919,7 @@ def handle_weather_query(original_text, text_lower, language):
                         "type": "weather",
                         "district": district,
                         "response": response,
-                        "fuzzy_match": location_info.get('confidence', 1.0) < 1.0
+                        "fuzzy_match": location_info.get('confidence', 1.0) < 0.9
                     },
                     status=200
                 )
@@ -1095,63 +985,24 @@ def handle_weather_query(original_text, text_lower, language):
         )
 
 def handle_commodity_query(original_text, text_lower, language):
-    try:
-        district = None
-        location_info = extract_location_from_command(text_lower)
-        
-        if location_info and location_info.get('confidence', 0) >= 0.6:
-            district = location_info['district']
-        
-        commodity = extract_commodity_from_text(original_text)
-        print(f"Extracted commodity: {commodity} from text: {original_text}")
-        
-        if not district:
-            base_msg = DISTRICT_ERROR_MESSAGES["district_required"][language]
-            popular_districts = get_popular_districts_list(language)
-            districts_list = ", ".join(popular_districts)
-            
-            error_msg = f"{base_msg}\n\nSuggested districts: {districts_list}"
-            
-            return create_response(
-                "District required for commodity prices",
-                data={
-                    "type": "error",
-                    "response": error_msg,
-                    "suggested_districts": popular_districts,
-                    "error_type": "district_required"
-                },
-                status=200
-            )
-        
-        if not commodity:
-            base_msg = DISTRICT_ERROR_MESSAGES["commodity_required"][language]
-            popular_commodities = get_popular_commodities_list(language)
-            commodities_list = ", ".join(popular_commodities)
-            
-            error_msg = f"{base_msg}\n\nSuggested commodities: {commodities_list}"
-            
-            return create_response(
-                "Commodity required for price check",
-                data={
-                    "type": "error",
-                    "response": error_msg,
-                    "suggested_commodities": popular_commodities,
-                    "error_type": "commodity_required"
-                },
-                status=200
-            )
-        
-        date_str = None
-        
-        return get_commodity_prices_internal(district, date_str, language, commodity)
-        
-    except Exception as e:
-        print(f"Commodity query error: {str(e)}")
-        return create_response(
-            "Failed to process commodity query",
-            error=str(e),
-            status=500
-        )
+   try:
+       district = None
+       location_info = extract_location_from_command(text_lower)
+       
+       if location_info and location_info.get('confidence', 0) >= 0.7:
+           district = location_info['district']
+       
+       date_str = None
+       
+       return get_commodity_prices_internal(district, date_str, language)
+       
+   except Exception as e:
+       print(f"Commodity query error: {str(e)}")
+       return create_response(
+           "Failed to process commodity query",
+           error=str(e),
+           status=500
+       )
 
 def handle_general_chat(text, language):
    try:
@@ -1165,13 +1016,21 @@ def handle_general_chat(text, language):
                status=200
            )
        
+       # Enhance context for Gujarati vegetable queries
+       enhanced_context = ""
+       if language == 'gu' and any(veg in text.lower() for veg in ['બટાટા', 'ટમેટા', 'કાંદો']):
+           enhanced_context = "User is asking about vegetables in Gujarati. Provide helpful agricultural information."
+       
        if language != 'en':
            try:
-               text = translate_text(text, 'en')
+               text_for_claude = translate_text(text, 'en')
            except Exception as e:
                print(f"Translation to English failed: {e}")
+               text_for_claude = text
+       else:
+           text_for_claude = text
        
-       response = get_claude_response(text, "", language)
+       response = get_claude_response(text_for_claude, enhanced_context, language)
        
        if not response:
            error_msg = "Unable to generate response"
@@ -1255,32 +1114,44 @@ def health_check():
 @app.route('/', methods=['GET'])
 def root():
    return create_response(
-       "Gujarat Smart Assistant API with Enhanced Commodity Filtering", 
+       "Gujarat Smart Assistant API with Disease Detection", 
        data={
-           "name": "Gujarat Smart Assistant API with Enhanced Commodity Filtering",
+           "name": "Gujarat Smart Assistant API with Disease Detection",
            "version": "3.2.0",
-           "description": "Enhanced intelligent API for Gujarat agriculture with granular commodity filtering - weather, specific commodity prices, and disease detection",
+           "description": "Enhanced intelligent API for Gujarat agriculture - weather, commodity prices, and disease detection with improved pronunciation handling",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
-               "Restricted query processing (agriculture only)",
+               "Enhanced pronunciation recognition for district names",
+               "Improved date filtering for commodity prices",
+               "Better Gujarati language support for vegetable queries",
                "Weather information for Gujarat districts",
-               "Granular commodity/Mandi price filtering by specific crops",
-               "Support for commodity queries in Gujarati, Hindi, and English",
+               "Recent commodity/Mandi price information",
                "Vegetable disease detection using AI",
                "Multi-language support with proper translation",
-               "Fuzzy district name matching for voice input",
-               "Enhanced commodity extraction from natural language queries"
-           ],
-           "supported_commodities": list(set(COMMODITY_MAPPING.values())),
-           "example_queries": {
-               "english": ["What is the price of tomato in Ahmedabad?", "Show me onion rates in Surat"],
-               "hindi": ["अहमदाबाद में टमाटर की कीमत क्या है?", "सूरत में प्याज के दाम बताएं"],
-               "gujarati": ["અમદાવાદમાં ટમેટાનો ભાવ કેટલો છે?", "સુરતમાં ડુંગળીના રેટ બતાવો"]
-           }
+               "Fuzzy district name matching for voice input"
+           ]
        }, 
        status=200
    )
 
 if __name__ == '__main__':
-   app.run(host='0.0.0.0', debug=True, port=5000)
+    port = find_free_port()
+    
+    print(f"\n🚀 Starting Enhanced Gujarat Smart Assistant API...")
+    print(f"🌐 Running on: http://localhost:{port}")
+    print(f"📍 Main endpoint: http://localhost:{port}/smart_assistant")
+    print(f"🏥 Health check: http://localhost:{port}/health")
+    
+    if port != 5000:
+        print(f"⚠️  Note: Port 5000 was occupied, using port {port} instead")
+    
+    try:
+        app.run(host='0.0.0.0', debug=True, port=port)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"❌ Port {port} is also in use. Trying to find another port...")
+            port = find_free_port()
+            app.run(host='0.0.0.0', debug=True, port=port)
+        else:
+            raise
