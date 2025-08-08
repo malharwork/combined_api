@@ -135,6 +135,12 @@ DISTRICT_NAME_VARIATIONS = {
     "સુરાત": "Surat",
     "વડોદરા": "Vadodara",
     "રાજકોટ": "Rajkot",
+    "rajcote": "Rajkot",
+    "raaj kot": "Rajkot",
+    "raj coat": "Rajkot",
+    "સુરાટ": "Surat",
+    "સુરઠ": "Surat",
+
     "રાજકોત": "Rajkot",
     "ગાંધીનગર": "Gandhinagar",
     "જામનગર": "Jamnagar",
@@ -456,7 +462,7 @@ def format_weather_response(data, district):
    
    return response
 
-def get_commodity_prices_internal(district, date_str, language):
+def get_commodity_prices_internal(district, date_str, language, commodity_filter=None):
    base_url = "https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24"
    params = {
        "api-key": "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b",
@@ -469,6 +475,69 @@ def get_commodity_prices_internal(district, date_str, language):
        params["filters[District]"] = district
    
    try:
+       response = requests.get(base_url, params=params)
+       response.raise_for_status()
+       api_data = response.json()
+       records = api_data.get('records', [])
+       
+       if records:
+           current_date = datetime.now()
+           valid_records = []
+           cutoff_date = current_date - timedelta(days=60)  # last 60 days only
+           
+           for record in records:
+               arrival_date_str = record.get('Arrival_Date', '')
+               if arrival_date_str:
+                   try:
+                       arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
+                       record['parsed_date'] = arrival_date
+                       if arrival_date >= cutoff_date:
+                           valid_records.append(record)
+                   except ValueError:
+                       continue
+           
+           valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
+           records = valid_records
+       
+       # Apply commodity filtering if specified
+       if commodity_filter:
+           records = [r for r in records if r.get('Commodity', '').lower() == commodity_filter.lower()]
+       
+       if not records:
+           no_data_msg = "No recent commodity price data found for the selected criteria."
+           if language != 'en':
+               try:
+                   no_data_msg = translate_text(no_data_msg, language)
+               except:
+                   pass
+           return create_response(
+               "No commodity price data found", 
+               data={
+                   "type": "commodity",
+                   "response": no_data_msg, 
+                   "records": []
+               }, 
+               status=200
+           )
+       else:
+           response_text = format_commodity_response(records, district, date_str)
+       
+       if language != 'en':
+           try:
+               response_text = translate_text(response_text, language)
+           except Exception as e:
+               print(f"Translation failed: {e}")
+       
+       return create_response(
+           "Commodity prices retrieved successfully", 
+           data={
+               "type": "commodity",
+               "response": response_text, 
+               "records": records
+           }, 
+           status=200
+       )
+    
        response = requests.get(base_url, params=params)
        response.raise_for_status()
        api_data = response.json()
@@ -996,7 +1065,20 @@ def handle_commodity_query(original_text, text_lower, language):
        
        date_str = None
        
-       return get_commodity_prices_internal(district, date_str, language)
+       # Detect commodity from query
+       commodity_filter = None
+       for gu_word, en_word in VEGETABLE_TRANSLATIONS.items():
+           if gu_word in text_lower:
+               commodity_filter = en_word
+               break
+       if not commodity_filter:
+           for word in ["potato", "tomato", "onion"]:
+               if word in text_lower:
+                   commodity_filter = word
+                   break
+       
+       return get_commodity_prices_internal(district, date_str, language, commodity_filter=commodity_filter)
+
        
    except Exception as e:
        print(f"Commodity query error: {str(e)}")
