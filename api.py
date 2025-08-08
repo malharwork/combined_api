@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -973,31 +972,19 @@ def is_commodity_query(text_lower):
    return any(keyword in text_lower for keyword in commodity_keywords)
 
 def extract_commodity_from_text(text):
-    """Extract commodity name from text in multiple languages with precise matching"""
+    """Extract commodity name from text in multiple languages with hybrid matching"""
     text_lower = text.lower().strip()
     
-    # First check direct translations from Gujarati/Hindi
+    # First check direct translations from Gujarati/Hindi (use older flexible logic)
     for gu_word, en_word in VEGETABLE_TRANSLATIONS.items():
         if gu_word.lower() in text_lower or gu_word in text:
+            print(f"Found Gujarati/Hindi commodity: {gu_word} -> {en_word}")
             return en_word
     
-    # Then check comprehensive commodity mapping for exact matches
-    for commodity, variations in COMMODITY_MAPPING.items():
-        for variation in variations:
-            variation_lower = variation.lower()
-            
-            # Check for exact word match (not partial)
-            words_in_text = text_lower.split()
-            if variation_lower in words_in_text:
-                return commodity
-            
-            # Check for exact match as substring with word boundaries
-            import re
-            pattern = r'\b' + re.escape(variation_lower) + r'\b'
-            if re.search(pattern, text_lower):
-                return commodity
+    # For English text, use precise word boundary matching to avoid confusion
+    import re
     
-    # Fallback: check for common English words (but be more careful)
+    # Check for exact English word matches with word boundaries
     english_commodities = {
         'potato': 'potato',
         'tomato': 'tomato', 
@@ -1014,10 +1001,32 @@ def extract_commodity_from_text(text):
         'groundnut': 'groundnut'
     }
     
-    words_in_text = text_lower.split()
-    for word in words_in_text:
-        if word in english_commodities:
-            return english_commodities[word]
+    # Use word boundary matching for English to prevent false matches
+    for word, commodity in english_commodities.items():
+        pattern = r'\b' + re.escape(word.lower()) + r'\b'
+        if re.search(pattern, text_lower):
+            print(f"Found English commodity: {word} -> {commodity}")
+            return commodity
+    
+    # Fallback: check for phonetic variations (flexible matching for transliterated text)
+    phonetic_mapping = {
+        'batata': 'potato',
+        'bateta': 'potato',
+        'tameta': 'potato',
+        'tamato': 'tomato',
+        'kando': 'onion',
+        'dungli': 'onion',
+        'ringan': 'brinjal',
+        'ringana': 'brinjal',
+        'bengan': 'brinjal',
+        'baigan': 'brinjal',
+        'baingan': 'brinjal'
+    }
+    
+    for phonetic, commodity in phonetic_mapping.items():
+        if phonetic in text_lower:
+            print(f"Found phonetic match: {phonetic} -> {commodity}")
+            return commodity
     
     return None
 
@@ -1403,15 +1412,16 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.7.0",
-           "description": "Fixed commodity detection issues - brinjal vs rice confusion resolved",
+           "version": "3.8.0",
+           "description": "Fixed Gujarati commodity detection while keeping English precision",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
-               "Fixed precise commodity detection - no more brinjal/rice confusion",
-               "Enhanced commodity mapping with exact word boundary matching",
-               "Added comprehensive vegetable and crop translations",
-               "Improved regex-based commodity extraction",
+               "Hybrid commodity detection - flexible for Gujarati, precise for English",
+               "Restored Gujarati text detection while preventing English false matches",
+               "Enhanced debug logging for commodity detection",
+               "Fixed brinjal vs rice confusion for English queries",
+               "Comprehensive vegetable and crop translations",
                "Fixed translation quality control - no more mixed language responses",
                "Default commodity date set to 01/07/2025 for consistent data retrieval",
                "Enhanced commodity filtering to show only requested commodity prices",
@@ -1423,6 +1433,7 @@ def root():
        }, 
        status=200
    )
+
 if __name__ == '__main__':
     port = find_free_port()
     
