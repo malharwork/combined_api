@@ -15,6 +15,38 @@ from difflib import SequenceMatcher
 import socket
 import re
 
+def extract_date_from_text(text):
+    """
+    Extracts a date from the text in formats like DD/MM/YYYY, DD-MM-YYYY,
+    or '5th August 2025'. Returns date string in DD/MM/YYYY format if found, else None.
+    """
+    # Match DD/MM/YYYY or DD-MM-YYYY
+    match = re.search(r'(\d{1,2})[\-/](\d{1,2})[\-/](\d{4})', text)
+    if match:
+        day, month, year = match.groups()
+        try:
+            date_obj = datetime(int(year), int(month), int(day))
+            return date_obj.strftime("%d/%m/%Y")
+        except ValueError:
+            return None
+
+    # Match natural language dates like "5 August 2025" or "5th Aug 2025"
+    match = re.search(r'(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})', text)
+    if match:
+        day, month_str, year = match.groups()
+        try:
+            date_obj = datetime.strptime(f"{day} {month_str} {year}", "%d %B %Y")
+            return date_obj.strftime("%d/%m/%Y")
+        except ValueError:
+            try:
+                date_obj = datetime.strptime(f"{day} {month_str} {year}", "%d %b %Y")
+                return date_obj.strftime("%d/%m/%Y")
+            except ValueError:
+                return None
+
+    return None
+
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -140,7 +172,6 @@ DISTRICT_NAME_VARIATIONS = {
     "raj coat": "Rajkot",
     "સુરાટ": "Surat",
     "સુરઠ": "Surat",
-
     "રાજકોત": "Rajkot",
     "ગાંધીનગર": "Gandhinagar",
     "જામનગર": "Jamnagar",
@@ -473,6 +504,8 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
    
    if district:
        params["filters[District]"] = district
+   if date_str:
+       params["filters[Arrival_Date]"] = date_str
    
    try:
        response = requests.get(base_url, params=params)
@@ -481,10 +514,10 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
        records = api_data.get('records', [])
        
        if records:
+       if not date_str and records:
            current_date = datetime.now()
            valid_records = []
            cutoff_date = current_date - timedelta(days=60)  # last 60 days only
-           
            for record in records:
                arrival_date_str = record.get('Arrival_Date', '')
                if arrival_date_str:
@@ -495,55 +528,13 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                            valid_records.append(record)
                    except ValueError:
                        continue
-           
            valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
            records = valid_records
-       
+
        # Apply commodity filtering if specified
        if commodity_filter:
            records = [r for r in records if r.get('Commodity', '').lower() == commodity_filter.lower()]
-       
-       if not records:
-           no_data_msg = "No recent commodity price data found for the selected criteria."
-           if language != 'en':
-               try:
-                   no_data_msg = translate_text(no_data_msg, language)
-               except:
-                   pass
-           return create_response(
-               "No commodity price data found", 
-               data={
-                   "type": "commodity",
-                   "response": no_data_msg, 
-                   "records": []
-               }, 
-               status=200
-           )
-       else:
-           response_text = format_commodity_response(records, district, date_str)
-       
-       if language != 'en':
-           try:
-               response_text = translate_text(response_text, language)
-           except Exception as e:
-               print(f"Translation failed: {e}")
-       
-       return create_response(
-           "Commodity prices retrieved successfully", 
-           data={
-               "type": "commodity",
-               "response": response_text, 
-               "records": records
-           }, 
-           status=200
-       )
-    
-       response = requests.get(base_url, params=params)
-       response.raise_for_status()
-       api_data = response.json()
-       records = api_data.get('records', [])
-       
-       if records:
+
            current_date = datetime.now()
            valid_records = []
            
@@ -1063,7 +1054,8 @@ def handle_commodity_query(original_text, text_lower, language):
        if location_info and location_info.get('confidence', 0) >= 0.5:
            district = location_info['district']
        
-       date_str = None
+       # Extract date from query
+       date_str = extract_date_from_text(original_text)
        
        # Detect commodity from query
        commodity_filter = None
