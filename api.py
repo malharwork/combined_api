@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -250,12 +251,50 @@ VEGETABLE_TRANSLATIONS = {
     "kando": "onion",
     "kanda": "onion",
     "dungli": "onion",
+    "રીંગણ": "brinjal",
+    "રીંગણા": "brinjal",
+    "ringan": "brinjal",
+    "ringana": "brinjal",
+    "બેંગન": "brinjal",
+    "bengan": "brinjal",
     "आलू": "potato",
     "टमाटर": "tomato",
     "प्याज": "onion",
+    "बैंगन": "brinjal",
     "aloo": "potato",
     "tamatar": "tomato",
-    "pyaz": "onion"
+    "pyaz": "onion",
+    "baigan": "brinjal",
+    "baingan": "brinjal"
+}
+
+# Comprehensive commodity mapping for precise detection
+COMMODITY_MAPPING = {
+    # Vegetables
+    "potato": ["potato", "aloo", "batata", "bateta", "બટાટા", "आलू"],
+    "tomato": ["tomato", "tamatar", "tameta", "ટામેટા", "टमाटर"],
+    "onion": ["onion", "pyaz", "kando", "dungli", "કાંદો", "प्याज"],
+    "brinjal": ["brinjal", "eggplant", "aubergine", "baigan", "baingan", "ringan", "ringana", "bengan", "રીંગણ", "बैंगन"],
+    "cabbage": ["cabbage", "patta gobi", "kobi", "કોબી", "पत्ता गोभी"],
+    "cauliflower": ["cauliflower", "gobi", "phool gobi", "ફૂલકોબી", "फूल गोभी"],
+    "okra": ["okra", "bhindi", "lady finger", "ભીંડા", "भिंडी"],
+    "green chili": ["green chili", "hari mirch", "લીલું મરચું", "हरी मिर्च"],
+    
+    # Grains & Cereals
+    "rice": ["rice", "chawal", "ચોખા", "चावल"],
+    "wheat": ["wheat", "gehun", "gandum", "ઘઉં", "गेहूं"],
+    "bajra": ["bajra", "pearl millet", "બાજરી", "बाजरा"],
+    "jowar": ["jowar", "sorghum", "જવાર", "ज्वार"],
+    
+    # Pulses
+    "chana": ["chana", "chickpea", "ચણા", "चना"],
+    "moong": ["moong", "green gram", "મગ", "मूंग"],
+    "tuar": ["tuar", "arhar", "pigeon pea", "તુવેર", "तुअर"],
+    
+    # Others
+    "cotton": ["cotton", "કપાસ", "कपास"],
+    "groundnut": ["groundnut", "peanut", "મગફળી", "मूंगफली"],
+    "sugarcane": ["sugarcane", "શેરડી", "गन्ना"]
 }
 
 DISEASE_MESSAGES = {
@@ -559,13 +598,27 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
            commodity_records = []
            commodity_filter_lower = commodity_filter.lower()
            
+           print(f"Looking for commodity: {commodity_filter}")
+           
            for record in records:
                commodity_name = record.get('Commodity', '').lower()
-               # Check for exact match or partial match
-               if (commodity_filter_lower in commodity_name or 
-                   commodity_name in commodity_filter_lower or
-                   commodity_filter_lower == commodity_name):
-                   commodity_records.append(record)
+               
+               # More precise matching for brinjal vs rice confusion
+               if commodity_filter_lower == 'brinjal':
+                   if ('brinjal' in commodity_name or 'brinzal' in commodity_name or 
+                       'eggplant' in commodity_name or 'aubergine' in commodity_name):
+                       commodity_records.append(record)
+                       print(f"Found brinjal match: {record.get('Commodity')}")
+               elif commodity_filter_lower == 'rice':
+                   if ('rice' in commodity_name and 'price' not in commodity_name):
+                       commodity_records.append(record)
+                       print(f"Found rice match: {record.get('Commodity')}")
+               else:
+                   # For other commodities, use exact matching
+                   if (commodity_filter_lower in commodity_name or 
+                       commodity_name in commodity_filter_lower):
+                       commodity_records.append(record)
+                       print(f"Found {commodity_filter} match: {record.get('Commodity')}")
            
            records = commodity_records
            
@@ -585,16 +638,25 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                    api_data = response.json()
                    temp_records = api_data.get('records', [])
                    
-                   # Filter for the specific commodity
+                   # Filter for the specific commodity with same precise logic
                    for record in temp_records:
                        commodity_name = record.get('Commodity', '').lower()
-                       if (commodity_filter_lower in commodity_name or 
-                           commodity_name in commodity_filter_lower or
-                           commodity_filter_lower == commodity_name):
-                           records.append(record)
+                       
+                       if commodity_filter_lower == 'brinjal':
+                           if ('brinjal' in commodity_name or 'brinzal' in commodity_name or 
+                               'eggplant' in commodity_name or 'aubergine' in commodity_name):
+                               records.append(record)
+                       elif commodity_filter_lower == 'rice':
+                           if ('rice' in commodity_name and 'price' not in commodity_name):
+                               records.append(record)
+                       else:
+                           if (commodity_filter_lower in commodity_name or 
+                               commodity_name in commodity_filter_lower):
+                               records.append(record)
                    
                    # If we found data, break
                    if records:
+                       print(f"Found {len(records)} records for {commodity_filter} on {try_date_str}")
                        break
        
        # Limit to top results
@@ -726,6 +788,15 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
            response += f"...और {len(records) - 5} और आइटम\n"
        else:
            response += f"...and {len(records) - 5} more items\n"
+   
+   # Simple note that translates well
+   if language == 'gu':
+       response += "\nનોંધ: તાજેતરના બજાર ભાવો"
+   elif language == 'hi':
+       response += "\nनोट: हाल के बाजार भाव"
+   else:
+       response += "\nNote: Latest market prices"
+   
    return response
 
 def is_query_allowed(text):
@@ -902,19 +973,51 @@ def is_commodity_query(text_lower):
    return any(keyword in text_lower for keyword in commodity_keywords)
 
 def extract_commodity_from_text(text):
-    """Extract commodity name from text in multiple languages"""
-    text_lower = text.lower()
+    """Extract commodity name from text in multiple languages with precise matching"""
+    text_lower = text.lower().strip()
     
-    # Check Gujarati words first
+    # First check direct translations from Gujarati/Hindi
     for gu_word, en_word in VEGETABLE_TRANSLATIONS.items():
         if gu_word.lower() in text_lower or gu_word in text:
             return en_word
     
-    # Check English words
-    commodities = ['potato', 'tomato', 'onion', 'wheat', 'rice', 'cotton', 'groundnut']
-    for commodity in commodities:
-        if commodity in text_lower:
-            return commodity
+    # Then check comprehensive commodity mapping for exact matches
+    for commodity, variations in COMMODITY_MAPPING.items():
+        for variation in variations:
+            variation_lower = variation.lower()
+            
+            # Check for exact word match (not partial)
+            words_in_text = text_lower.split()
+            if variation_lower in words_in_text:
+                return commodity
+            
+            # Check for exact match as substring with word boundaries
+            import re
+            pattern = r'\b' + re.escape(variation_lower) + r'\b'
+            if re.search(pattern, text_lower):
+                return commodity
+    
+    # Fallback: check for common English words (but be more careful)
+    english_commodities = {
+        'potato': 'potato',
+        'tomato': 'tomato', 
+        'onion': 'onion',
+        'brinjal': 'brinjal',
+        'eggplant': 'brinjal',
+        'aubergine': 'brinjal',
+        'cabbage': 'cabbage',
+        'cauliflower': 'cauliflower',
+        'okra': 'okra',
+        'rice': 'rice',
+        'wheat': 'wheat',
+        'cotton': 'cotton',
+        'groundnut': 'groundnut'
+    }
+    
+    words_in_text = text_lower.split()
+    for word in words_in_text:
+        if word in english_commodities:
+            return english_commodities[word]
     
     return None
 
@@ -1300,18 +1403,19 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.6.0",
-           "description": "Fixed translation quality issues - no more mixed language responses",
+           "version": "3.7.0",
+           "description": "Fixed commodity detection issues - brinjal vs rice confusion resolved",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
+               "Fixed precise commodity detection - no more brinjal/rice confusion",
+               "Enhanced commodity mapping with exact word boundary matching",
+               "Added comprehensive vegetable and crop translations",
+               "Improved regex-based commodity extraction",
                "Fixed translation quality control - no more mixed language responses",
-               "Enhanced translation validation to prevent garbled text",
-               "Simplified commodity response format for better translation",
                "Default commodity date set to 01/07/2025 for consistent data retrieval",
                "Enhanced commodity filtering to show only requested commodity prices",
                "Fixed weather queries to always use OpenMeteo API in all languages",
-               "Better commodity extraction from multilingual text",
                "Weather information for Gujarat districts",
                "Vegetable disease detection using AI",
                "Multi-language support with quality translation control"
