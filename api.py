@@ -410,6 +410,32 @@ def translate_disease_text(text: str, target_language: str) -> str:
         print(f"Disease text translation error: {e}")
         return text
 
+def is_translation_quality_good(original_text, translated_text, target_language):
+    """Check if translation quality is acceptable"""
+    if not translated_text or not translated_text.strip():
+        return False
+    
+    # Check for mixed languages (English words in Hindi/Gujarati translation)
+    english_words = ['the', 'and', 'or', 'of', 'in', 'to', 'for', 'with', 'by', 'from', 'are', 'is', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'cannot', 'price', 'market', 'data', 'note', 'range', 'modal', 'commodity', 'available', 'recent', 'latest']
+    
+    if target_language in ['hi', 'gu']:
+        translated_lower = translated_text.lower()
+        english_word_count = sum(1 for word in english_words if word in translated_lower)
+        # If more than 2 English words found in translation, consider it poor quality
+        if english_word_count > 2:
+            return False
+    
+    # Check if translation is too short compared to original
+    if len(translated_text.strip()) < len(original_text.strip()) * 0.5:
+        return False
+    
+    # Check if translation is mostly unchanged (copy of original)
+    similarity_ratio = len(set(original_text.lower().split()) & set(translated_text.lower().split())) / max(len(original_text.split()), 1)
+    if similarity_ratio > 0.8:
+        return False
+    
+    return True
+
 def translate_text(text, target_language):
    if target_language == 'en':
        return text
@@ -426,38 +452,35 @@ def translate_text(text, target_language):
        if not cleaned_text:
            return text
        
-       max_chunk_length = 500
-       if len(cleaned_text) > max_chunk_length:
-           sentences = cleaned_text.split('\n')
-           translated_sentences = []
-           
-           for sentence in sentences:
-               if sentence.strip():
-                   for attempt in range(3):
-                       try:
-                           translated_sentence = translator.translate(sentence.strip())
-                           if translated_sentence and len(translated_sentence.strip()) > 0:
-                               translated_sentences.append(translated_sentence.strip())
-                               break
-                       except Exception as e:
-                           print(f"Sentence translation attempt {attempt + 1} failed: {e}")
-                           if attempt == 2:
-                               translated_sentences.append(sentence)
-           
-           return '\n'.join(translated_sentences)
-       else:
-           for attempt in range(3):
+       # Split into sentences for better translation
+       sentences = cleaned_text.split('\n')
+       translated_sentences = []
+       
+       for sentence in sentences:
+           if sentence.strip():
                try:
-                   translated = translator.translate(cleaned_text)
-                   if translated and len(translated.strip()) > 0:
-                       if len(translated.strip()) >= len(cleaned_text) * 0.3:
-                           return translated.strip()
-                   print(f"Translation attempt {attempt + 1} incomplete for: {cleaned_text[:50]}...")
+                   translated_sentence = translator.translate(sentence.strip())
+                   
+                   # Check translation quality
+                   if translated_sentence and is_translation_quality_good(sentence.strip(), translated_sentence, target_language):
+                       translated_sentences.append(translated_sentence.strip())
+                   else:
+                       # If translation quality is poor, keep original
+                       print(f"Poor translation quality for: {sentence[:50]}... Keeping original.")
+                       translated_sentences.append(sentence.strip())
+                       
                except Exception as e:
-                   print(f"Translation attempt {attempt + 1} error: {e}")
-                   continue
-           
-           print(f"All translation attempts failed for text: {cleaned_text[:50]}...")
+                   print(f"Translation failed for sentence: {sentence[:50]}... Error: {e}")
+                   # Keep original sentence if translation fails
+                   translated_sentences.append(sentence.strip())
+       
+       final_translation = '\n'.join(translated_sentences)
+       
+       # Final quality check on complete translation
+       if is_translation_quality_good(cleaned_text, final_translation, target_language):
+           return final_translation
+       else:
+           print(f"Overall translation quality poor, returning original text")
            return text
            
    except Exception as e:
@@ -609,9 +632,13 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
        
        if language != 'en':
            try:
-               response_text = translate_text(response_text, language)
+               # Only translate if we can do it well
+               translated_response = translate_text(response_text, language)
+               if translated_response != response_text:  # Translation actually happened
+                   response_text = translated_response
+               # If translation failed or returned original, keep English version
            except Exception as e:
-               print(f"Translation failed: {e}")
+               print(f"Translation failed, keeping English version: {e}")
        
        return create_response(
            "Commodity prices retrieved successfully", 
@@ -638,7 +665,7 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
    
    response = ""
    
-   # Create header based on what was requested
+   # Create header based on what was requested - keep simple for better translation
    if commodity_filter and district:
        if language == 'gu':
            response = f"{district}માં {commodity_filter}ના ભાવો:\n\n"
@@ -679,13 +706,13 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
        if language == 'gu':
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   બજાર: {market}\n"
-           response += f"   ભાવ રેન્જ: ₹{min_price} - ₹{max_price}\n"
-           response += f"   મોડલ ભાવ: ₹{modal_price}\n\n"
+           response += f"   ભાવ: ₹{min_price} - ₹{max_price}\n"
+           response += f"   સરેરાશ: ₹{modal_price}\n\n"
        elif language == 'hi':
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   बाजार: {market}\n"
-           response += f"   कीमत रेंज: ₹{min_price} - ₹{max_price}\n"
-           response += f"   मॉडल कीमत: ₹{modal_price}\n\n"
+           response += f"   कीमत: ₹{min_price} - ₹{max_price}\n"
+           response += f"   औसत: ₹{modal_price}\n\n"
        else:
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   Market: {market}\n"
@@ -694,19 +721,19 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
    
    if len(records) > 5:
        if language == 'gu':
-           response += f"... અને {len(records) - 5} વધુ આઇટમ્સ.\n"
+           response += f"...અને {len(records) - 5} વધુ આઇટમ્સ\n"
        elif language == 'hi':
-           response += f"... और {len(records) - 5} और आइटम।\n"
+           response += f"...और {len(records) - 5} और आइटम\n"
        else:
-           response += f"... and {len(records) - 5} more items.\n"
+           response += f"...and {len(records) - 5} more items\n"
    
-   # Add note about latest data (without showing specific dates to user)
+   # Simple note that translates well
    if language == 'gu':
-       response += "\nનોંધ: દર્શાવેલ ભાવો તાજેતરના ઉપલબ્ધ માર્કેટ ડેટા પરથી છે."
+       response += "\nનોંધ: તાજેતરના બજાર ભાવો"
    elif language == 'hi':
-       response += "\nनोट: दिखाई गई कीमतें हाल के उपलब्ध मार्केट डेटा से हैं।"
+       response += "\nनोट: हाल के बाजार भाव"
    else:
-       response += "\nNote: Prices shown are from the latest available market data."
+       response += "\nNote: Latest market prices"
    
    return response
 
@@ -1067,9 +1094,12 @@ def handle_weather_query(original_text, text_lower, language):
                 
                 if language != 'en':
                     try:
-                        response = translate_text(response, language)
+                        translated_response = translate_text(response, language)
+                        if translated_response != response:  # Translation actually happened
+                            response = translated_response
+                        # If translation failed, keep English version
                     except Exception as e:
-                        print(f"Weather translation failed: {e}")
+                        print(f"Weather translation failed, keeping English: {e}")
                 
                 return create_response(
                     "Weather information retrieved successfully",
@@ -1279,27 +1309,25 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.5.0",
-           "description": "Fixed API with default commodity date and enhanced filtering for Gujarat agriculture",
+           "version": "3.6.0",
+           "description": "Fixed translation quality issues - no more mixed language responses",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
+               "Fixed translation quality control - no more mixed language responses",
+               "Enhanced translation validation to prevent garbled text",
+               "Simplified commodity response format for better translation",
                "Default commodity date set to 01/07/2025 for consistent data retrieval",
                "Enhanced commodity filtering to show only requested commodity prices",
-               "Improved error messages when specific commodity data not available",
                "Fixed weather queries to always use OpenMeteo API in all languages",
-               "Removed date display from commodity price responses",
                "Better commodity extraction from multilingual text",
-               "Fixed pronunciation recognition for district names",
                "Weather information for Gujarat districts",
                "Vegetable disease detection using AI",
-               "Multi-language support with proper translation",
-               "Improved fuzzy district name matching"
+               "Multi-language support with quality translation control"
            ]
        }, 
        status=200
    )
-
 if __name__ == '__main__':
     port = find_free_port()
     
