@@ -509,17 +509,21 @@ def format_weather_response(data, district):
 
 def get_commodity_prices_internal(district, date_str, language, commodity_filter=None):
    base_url = "https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24"
+   
+   # Set default date to 01/07/2025 if no date provided
+   if not date_str:
+       date_str = "01/07/2025"
+   
    params = {
        "api-key": "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b",
        "format": "json",
        "filters[State]": "Gujarat",
+       "filters[Arrival_Date]": date_str,
        "limit": "5000"
    }
    
    if district:
        params["filters[District]"] = district
-   if date_str:
-       params["filters[Arrival_Date]"] = date_str
    
    try:
        response = requests.get(base_url, params=params)
@@ -527,84 +531,61 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
        api_data = response.json()
        records = api_data.get('records', [])
        
-       if records:
-           # Filter for recent data only (2024 onwards for fresh data)
-           current_date = datetime.now()
-           valid_records = []
-           cutoff_year = 2024  # Only accept data from 2024 onwards
+       # Apply commodity filtering if specified - MUST match exactly what user asked for
+       if commodity_filter:
+           commodity_records = []
+           commodity_filter_lower = commodity_filter.lower()
            
            for record in records:
-               arrival_date_str = record.get('Arrival_Date', '')
-               if arrival_date_str:
-                   try:
-                       arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
-                       record['parsed_date'] = arrival_date
-                       
-                       # Only include recent data
-                       if arrival_date.year >= cutoff_year:
-                           valid_records.append(record)
-                   except ValueError:
-                       continue
+               commodity_name = record.get('Commodity', '').lower()
+               # Check for exact match or partial match
+               if (commodity_filter_lower in commodity_name or 
+                   commodity_name in commodity_filter_lower or
+                   commodity_filter_lower == commodity_name):
+                   commodity_records.append(record)
            
-           # Sort by date (most recent first)
-           valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
+           records = commodity_records
            
-           # Apply commodity filtering if specified
-           if commodity_filter:
-               commodity_records = []
-               commodity_filter_lower = commodity_filter.lower()
+           # If no data found for the specific commodity on default date, try recent dates
+           if not records:
+               print(f"No data found for {commodity_filter} on {date_str}, trying recent dates")
                
-               for record in valid_records:
-                   commodity_name = record.get('Commodity', '').lower()
-                   # Check for exact match or partial match
-                   if (commodity_filter_lower in commodity_name or 
-                       commodity_name in commodity_filter_lower or
-                       commodity_filter_lower == commodity_name):
-                       commodity_records.append(record)
-               
-               valid_records = commodity_records
-           
-           # If no recent data found, fallback with warning
-           if not valid_records and records:
-               print(f"No recent data found for {commodity_filter} in {district}, falling back to older data")
-               for record in records:
-                   arrival_date_str = record.get('Arrival_Date', '')
-                   if arrival_date_str:
-                       try:
-                           arrival_date = datetime.strptime(arrival_date_str, '%d/%m/%Y')
-                           record['parsed_date'] = arrival_date
-                           valid_records.append(record)
-                       except ValueError:
-                           continue
-               
-               valid_records.sort(key=lambda x: x.get('parsed_date', datetime.min), reverse=True)
-               
-               # Apply commodity filter to fallback data
-               if commodity_filter:
-                   commodity_records = []
-                   commodity_filter_lower = commodity_filter.lower()
+               # Try last 30 days from default date
+               base_date = datetime.strptime(date_str, '%d/%m/%Y')
+               for days_back in range(1, 31):
+                   try_date = base_date - timedelta(days=days_back)
+                   try_date_str = try_date.strftime('%d/%m/%Y')
                    
-                   for record in valid_records:
+                   params["filters[Arrival_Date]"] = try_date_str
+                   response = requests.get(base_url, params=params)
+                   response.raise_for_status()
+                   api_data = response.json()
+                   temp_records = api_data.get('records', [])
+                   
+                   # Filter for the specific commodity
+                   for record in temp_records:
                        commodity_name = record.get('Commodity', '').lower()
                        if (commodity_filter_lower in commodity_name or 
                            commodity_name in commodity_filter_lower or
                            commodity_filter_lower == commodity_name):
-                           commodity_records.append(record)
+                           records.append(record)
                    
-                   valid_records = commodity_records
-           
-           # Limit to top results
-           if valid_records:
-               records = valid_records[:10]
+                   # If we found data, break
+                   if records:
+                       break
+       
+       # Limit to top results
+       if records:
+           records = records[:10]
        
        if not records:
            if commodity_filter:
-               no_data_msg = f"No recent price data found for {commodity_filter}"
+               no_data_msg = f"No price data found for {commodity_filter}"
                if district:
                    no_data_msg += f" in {district}"
-               no_data_msg += ". Please try a different commodity or district."
+               no_data_msg += ". This commodity may not be available in the selected market or try a different district."
            else:
-               no_data_msg = "No recent commodity price data found for the selected criteria."
+               no_data_msg = "No commodity price data found for the selected criteria."
            
            if language != 'en':
                try:
@@ -617,7 +598,9 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                data={
                    "type": "commodity",
                    "response": no_data_msg, 
-                   "records": []
+                   "records": [],
+                   "commodity_searched": commodity_filter,
+                   "district_searched": district
                }, 
                status=200
            )
@@ -635,7 +618,9 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
            data={
                "type": "commodity",
                "response": response_text, 
-               "records": records
+               "records": records,
+               "commodity_searched": commodity_filter,
+               "district_searched": district
            }, 
            status=200
        )
@@ -656,32 +641,32 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
    # Create header based on what was requested
    if commodity_filter and district:
        if language == 'gu':
-           response = f"{district}માં {commodity_filter}ના તાજેતરના ભાવો:\n\n"
+           response = f"{district}માં {commodity_filter}ના ભાવો:\n\n"
        elif language == 'hi':
-           response = f"{district} में {commodity_filter} के हाल की कीमतें:\n\n"
+           response = f"{district} में {commodity_filter} की कीमतें:\n\n"
        else:
-           response = f"Recent {commodity_filter} prices in {district}:\n\n"
+           response = f"{commodity_filter.title()} prices in {district}:\n\n"
    elif commodity_filter:
        if language == 'gu':
-           response = f"ગુજરાતમાં {commodity_filter}ના તાજેતરના ભાવો:\n\n"
+           response = f"ગુજરાતમાં {commodity_filter}ના ભાવો:\n\n"
        elif language == 'hi':
-           response = f"गुजरात में {commodity_filter} के हाल की कीमतें:\n\n"
+           response = f"गुजरात में {commodity_filter} की कीमतें:\n\n"
        else:
-           response = f"Recent {commodity_filter} prices in Gujarat:\n\n"
+           response = f"{commodity_filter.title()} prices in Gujarat:\n\n"
    elif district:
        if language == 'gu':
-           response = f"{district}માં તાજેતરના કોમોડિટી ભાવો:\n\n"
+           response = f"{district}માં કોમોડિટી ભાવો:\n\n"
        elif language == 'hi':
-           response = f"{district} में हाल की कमोडिटी कीमतें:\n\n"
+           response = f"{district} में कमोडिटी कीमतें:\n\n"
        else:
-           response = f"Recent commodity prices in {district}:\n\n"
+           response = f"Commodity prices in {district}:\n\n"
    else:
        if language == 'gu':
-           response = "ગુજરાતમાં તાજેતરના કોમોડિટી ભાવો:\n\n"
+           response = "ગુજરાતમાં કોમોડિટી ભાવો:\n\n"
        elif language == 'hi':
-           response = "गुजरात में हाल की कमोडिटी कीमतें:\n\n"
+           response = "गुजरात में कमोडिटी कीमतें:\n\n"
        else:
-           response = "Recent commodity prices in Gujarat:\n\n"
+           response = "Commodity prices in Gujarat:\n\n"
    
    for i, record in enumerate(records[:5]):
        commodity_name = record.get('Commodity', 'N/A')
@@ -715,13 +700,13 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
        else:
            response += f"... and {len(records) - 5} more items.\n"
    
-   # Add note about latest data (without showing specific dates)
+   # Add note about latest data (without showing specific dates to user)
    if language == 'gu':
-       response += "\nનોંધ: દર્શાવેલ ભાવો તાજેતરના ઉપલબ્ધ ડેટા પરથી છે."
+       response += "\nનોંધ: દર્શાવેલ ભાવો તાજેતરના ઉપલબ્ધ માર્કેટ ડેટા પરથી છે."
    elif language == 'hi':
-       response += "\nनोट: दिखाई गई कीमतें हाल के उपलब्ध डेटा से हैं।"
+       response += "\nनोट: दिखाई गई कीमतें हाल के उपलब्ध मार्केट डेटा से हैं।"
    else:
-       response += "\nNote: Prices shown are from the most recent available data."
+       response += "\nNote: Prices shown are from the latest available market data."
    
    return response
 
@@ -1294,14 +1279,15 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.4.0",
-           "description": "Enhanced intelligent API for Gujarat agriculture - weather, commodity prices, and disease detection",
+           "version": "3.5.0",
+           "description": "Fixed API with default commodity date and enhanced filtering for Gujarat agriculture",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
+               "Default commodity date set to 01/07/2025 for consistent data retrieval",
+               "Enhanced commodity filtering to show only requested commodity prices",
+               "Improved error messages when specific commodity data not available",
                "Fixed weather queries to always use OpenMeteo API in all languages",
-               "Enhanced commodity filtering to show only recent data (2024+)",
-               "Improved Gujarati vegetable query support with phonetic matching",
                "Removed date display from commodity price responses",
                "Better commodity extraction from multilingual text",
                "Fixed pronunciation recognition for district names",
@@ -1321,16 +1307,11 @@ if __name__ == '__main__':
     print(f"🌐 Running on: http://localhost:{port}")
     print(f"📍 Main endpoint: http://localhost:{port}/smart_assistant")
     print(f"🏥 Health check: http://localhost:{port}/health")
+    print(f"📅 Default commodity date: 01/07/2025")
+    print(f"🌾 Enhanced commodity filtering for specific requests")
     
     if port != 5000:
         print(f"⚠️  Note: Port 5000 was occupied, using port {port} instead")
     
     try:
-        app.run(host='0.0.0.0', debug=True, port=port)
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print(f"❌ Port {port} is also in use. Trying to find another port...")
-            port = find_free_port()
-            app.run(host='0.0.0.0', debug=True, port=port)
-        else:
-            raise
+        app
