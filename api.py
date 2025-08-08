@@ -550,18 +550,32 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
        api_data = response.json()
        records = api_data.get('records', [])
        
+       print(f"Total records found: {len(records)}")
+       
        # Apply commodity filtering if specified - MUST match exactly what user asked for
        if commodity_filter:
            commodity_records = []
            commodity_filter_lower = commodity_filter.lower()
            
-           print(f"Looking for commodity: {commodity_filter}")
+           print(f"Filtering for commodity: {commodity_filter}")
            
            for record in records:
                commodity_name = record.get('Commodity', '').lower()
                
-               # More precise matching for brinjal vs rice confusion
-               if commodity_filter_lower == 'brinjal':
+               # More precise matching based on commodity type
+               if commodity_filter_lower == 'tomato':
+                   if ('tomato' in commodity_name or 'tamatar' in commodity_name):
+                       commodity_records.append(record)
+                       print(f"Found tomato match: {record.get('Commodity')}")
+               elif commodity_filter_lower == 'potato':
+                   if ('potato' in commodity_name or 'aloo' in commodity_name):
+                       commodity_records.append(record)
+                       print(f"Found potato match: {record.get('Commodity')}")
+               elif commodity_filter_lower == 'onion':
+                   if ('onion' in commodity_name or 'pyaz' in commodity_name):
+                       commodity_records.append(record)
+                       print(f"Found onion match: {record.get('Commodity')}")
+               elif commodity_filter_lower == 'brinjal':
                    if ('brinjal' in commodity_name or 'brinzal' in commodity_name or 
                        'eggplant' in commodity_name or 'aubergine' in commodity_name):
                        commodity_records.append(record)
@@ -572,11 +586,11 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                        print(f"Found rice match: {record.get('Commodity')}")
                else:
                    # For other commodities, use exact matching
-                   if (commodity_filter_lower in commodity_name or 
-                       commodity_name in commodity_filter_lower):
+                   if (commodity_filter_lower in commodity_name):
                        commodity_records.append(record)
                        print(f"Found {commodity_filter} match: {record.get('Commodity')}")
            
+           print(f"Filtered records for {commodity_filter}: {len(commodity_records)}")
            records = commodity_records
            
            # If no data found for the specific commodity on default date, try recent dates
@@ -599,7 +613,16 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                    for record in temp_records:
                        commodity_name = record.get('Commodity', '').lower()
                        
-                       if commodity_filter_lower == 'brinjal':
+                       if commodity_filter_lower == 'tomato':
+                           if ('tomato' in commodity_name or 'tamatar' in commodity_name):
+                               records.append(record)
+                       elif commodity_filter_lower == 'potato':
+                           if ('potato' in commodity_name or 'aloo' in commodity_name):
+                               records.append(record)
+                       elif commodity_filter_lower == 'onion':
+                           if ('onion' in commodity_name or 'pyaz' in commodity_name):
+                               records.append(record)
+                       elif commodity_filter_lower == 'brinjal':
                            if ('brinjal' in commodity_name or 'brinzal' in commodity_name or 
                                'eggplant' in commodity_name or 'aubergine' in commodity_name):
                                records.append(record)
@@ -607,14 +630,19 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
                            if ('rice' in commodity_name and 'price' not in commodity_name):
                                records.append(record)
                        else:
-                           if (commodity_filter_lower in commodity_name or 
-                               commodity_name in commodity_filter_lower):
+                           if (commodity_filter_lower in commodity_name):
                                records.append(record)
                    
                    # If we found data, break
                    if records:
                        print(f"Found {len(records)} records for {commodity_filter} on {try_date_str}")
                        break
+           
+           # CRITICAL: If commodity filter is specified but no matching records found, 
+           # return empty instead of showing all commodities
+           if commodity_filter and not records:
+               print(f"No {commodity_filter} found, returning empty result")
+               # Don't fallback to showing all commodities!
        
        # Limit to top results
        if records:
@@ -1363,18 +1391,17 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.9.0",
-           "description": "Reverted to simpler translation logic - no more blocking of good translations",
+           "version": "4.0.0",
+           "description": "Fixed commodity filtering - now returns only requested commodity, not all commodities",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
-               "Reverted to simpler, more reliable translation logic",
-               "Removed overly strict translation quality checks",
-               "Hybrid commodity detection - flexible for Gujarati, precise for English", 
-               "Fixed brinjal vs rice confusion for English queries",
-               "Comprehensive vegetable and crop translations",
+               "FIXED: Commodity filtering now returns only requested commodity (not all commodities)",
+               "Enhanced logging to debug commodity filtering issues",
+               "Improved tomato detection with 'tamatar' support",
+               "Better fallback logic - shows empty result if specific commodity not found",
+               "Hybrid commodity detection - flexible for Gujarati, precise for English",
                "Default commodity date set to 01/07/2025 for consistent data retrieval",
-               "Enhanced commodity filtering to show only requested commodity prices",
                "Fixed weather queries to always use OpenMeteo API in all languages",
                "Weather information for Gujarat districts",
                "Vegetable disease detection using AI",
@@ -1383,6 +1410,7 @@ def root():
        }, 
        status=200
    )
+   
 if __name__ == '__main__':
     port = find_free_port()
     
