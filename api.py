@@ -1307,11 +1307,16 @@ if __name__ == '__main__':
     print(f"🌐 Running on: http://localhost:{port}")
     print(f"📍 Main endpoint: http://localhost:{port}/smart_assistant")
     print(f"🏥 Health check: http://localhost:{port}/health")
-    print(f"📅 Default commodity date: 01/07/2025")
-    print(f"🌾 Enhanced commodity filtering for specific requests")
     
     if port != 5000:
         print(f"⚠️  Note: Port 5000 was occupied, using port {port} instead")
     
     try:
-        app
+        app.run(host='0.0.0.0', debug=True, port=port)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"❌ Port {port} is also in use. Trying to find another port...")
+            port = find_free_port()
+            app.run(host='0.0.0.0', debug=True, port=port)
+        else:
+            raise
