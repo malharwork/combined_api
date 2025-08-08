@@ -651,13 +651,9 @@ def get_commodity_prices_internal(district, date_str, language, commodity_filter
        
        if language != 'en':
            try:
-               # Only translate if we can do it well
-               translated_response = translate_text(response_text, language)
-               if translated_response != response_text:  # Translation actually happened
-                   response_text = translated_response
-               # If translation failed or returned original, keep English version
+               response_text = translate_text(response_text, language)
            except Exception as e:
-               print(f"Translation failed, keeping English version: {e}")
+               print(f"Translation failed: {e}")
        
        return create_response(
            "Commodity prices retrieved successfully", 
@@ -910,7 +906,7 @@ def is_weather_query(text_lower):
    weather_keywords = [
        'weather', 'temperature', 'rain', 'forecast', 'climate', 'humid', 'wind',
        'hot', 'cold', 'sunny', 'cloudy', 'storm', 'precipitation', 'degrees',
-       'celsius', 'fahrenheit', 'mausam', 'hava', 'barish', 'thand', 'garmi',
+       'celsius', 'fahrenheit', 'mausam', 'hava', 'barish', 'thand', 'garmi', 'havaman',
        'હવામાન', 'તાપમાન', 'વરસાદ', 'ઠંડી', 'ગરમી', 'આબોહવા', 'મૌસમ',
        'hawaman', 'tapman', 'varsad', 'thandi', 'garami', 'abohawa', 'mausam'
    ]
@@ -1155,12 +1151,9 @@ def handle_weather_query(original_text, text_lower, language):
                 
                 if language != 'en':
                     try:
-                        translated_response = translate_text(response, language)
-                        if translated_response != response:  # Translation actually happened
-                            response = translated_response
-                        # If translation failed, keep English version
+                        response = translate_text(response, language)
                     except Exception as e:
-                        print(f"Weather translation failed, keeping English: {e}")
+                        print(f"Weather translation failed: {e}")
                 
                 return create_response(
                     "Weather information retrieved successfully",
@@ -1370,23 +1363,22 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "3.8.0",
-           "description": "Fixed Gujarati commodity detection while keeping English precision",
+           "version": "3.9.0",
+           "description": "Reverted to simpler translation logic - no more blocking of good translations",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
-               "Hybrid commodity detection - flexible for Gujarati, precise for English",
-               "Restored Gujarati text detection while preventing English false matches",
-               "Enhanced debug logging for commodity detection",
+               "Reverted to simpler, more reliable translation logic",
+               "Removed overly strict translation quality checks",
+               "Hybrid commodity detection - flexible for Gujarati, precise for English", 
                "Fixed brinjal vs rice confusion for English queries",
                "Comprehensive vegetable and crop translations",
-               "Fixed translation quality control - no more mixed language responses",
                "Default commodity date set to 01/07/2025 for consistent data retrieval",
                "Enhanced commodity filtering to show only requested commodity prices",
                "Fixed weather queries to always use OpenMeteo API in all languages",
                "Weather information for Gujarat districts",
                "Vegetable disease detection using AI",
-               "Multi-language support with quality translation control"
+               "Multi-language support with reliable translation"
            ]
        }, 
        status=200
