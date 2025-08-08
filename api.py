@@ -746,21 +746,74 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
        max_price = record.get('Max_Price', 'N/A')
        modal_price = record.get('Modal_Price', 'N/A')
        
+       # Clean and validate price values with more robust logic
+       def clean_price(price_val):
+           if price_val == 'N/A' or price_val is None or price_val == '':
+               return 'N/A'
+           
+           # Convert to string and clean
+           price_str = str(price_val).strip()
+           
+           # Handle common malformed patterns
+           if not price_str or price_str.lower() in ['n/a', 'na', 'nil', '0', '']:
+               return 'N/A'
+           
+           # Remove currency symbols and extra spaces
+           import re
+           # First, remove common currency symbols and extra characters
+           cleaned = re.sub(r'[₹$,\s]', '', price_str)
+           
+           # Extract only the first valid number sequence
+           numbers = re.findall(r'\d+\.?\d*', cleaned)
+           if numbers:
+               try:
+                   # Take the first number found and convert to float
+                   first_number = numbers[0]
+                   float_val = float(first_number)
+                   # Return as integer if it's a whole number, otherwise as float
+                   if float_val > 0:
+                       return str(int(float_val)) if float_val.is_integer() else str(float_val)
+                   else:
+                       return 'N/A'
+               except (ValueError, IndexError):
+                   return 'N/A'
+           
+           # If no valid numbers found, try to extract digits only
+           digits_only = re.sub(r'[^\d]', '', price_str)
+           if digits_only and len(digits_only) >= 1:
+               try:
+                   val = int(digits_only)
+                   if val > 0:
+                       return str(val)
+               except ValueError:
+                   pass
+           
+           return 'N/A'
+       
+       # Clean all price values with enhanced logic
+       min_price_clean = clean_price(min_price)
+       max_price_clean = clean_price(max_price)
+       modal_price_clean = clean_price(modal_price)
+       
+       # Additional validation - if all prices are N/A, skip this record
+       if min_price_clean == 'N/A' and max_price_clean == 'N/A' and modal_price_clean == 'N/A':
+           continue
+       
        if language == 'gu':
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   બજાર: {market}\n"
-           response += f"   ભાવ: ₹{min_price} - ₹{max_price}\n"
-           response += f"   સરેરાશ: ₹{modal_price}\n\n"
+           response += f"   ભાવ: ₹{min_price_clean} - ₹{max_price_clean}\n"
+           response += f"   સરેરાશ: ₹{modal_price_clean}\n\n"
        elif language == 'hi':
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   बाजार: {market}\n"
-           response += f"   कीमत: ₹{min_price} - ₹{max_price}\n"
-           response += f"   औसत: ₹{modal_price}\n\n"
+           response += f"   कीमत: ₹{min_price_clean} - ₹{max_price_clean}\n"
+           response += f"   औसत: ₹{modal_price_clean}\n\n"
        else:
            response += f"{i+1}. {commodity_name} ({variety})\n"
            response += f"   Market: {market}\n"
-           response += f"   Price Range: ₹{min_price} - ₹{max_price}\n"
-           response += f"   Modal Price: ₹{modal_price}\n\n"
+           response += f"   Price Range: ₹{min_price_clean} - ₹{max_price_clean}\n"
+           response += f"   Modal Price: ₹{modal_price_clean}\n\n"
    
    if len(records) > 5:
        if language == 'gu':
@@ -1391,8 +1444,8 @@ def root():
        "Gujarat Smart Assistant API with Disease Detection", 
        data={
            "name": "Gujarat Smart Assistant API with Disease Detection",
-           "version": "4.0.0",
-           "description": "Fixed commodity filtering - now returns only requested commodity, not all commodities",
+           "version": "4.2.0",
+           "description": "Enhanced price cleaning logic - fixed malformed price display issues",
            "main_endpoint": "/smart_assistant",
            "supported_languages": ["English (en)", "Hindi (hi)", "Gujarati (gu)"],
            "features": [
