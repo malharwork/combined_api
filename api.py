@@ -448,32 +448,6 @@ def translate_disease_text(text: str, target_language: str) -> str:
         print(f"Disease text translation error: {e}")
         return text
 
-def is_translation_quality_good(original_text, translated_text, target_language):
-    """Check if translation quality is acceptable"""
-    if not translated_text or not translated_text.strip():
-        return False
-    
-    # Check for mixed languages (English words in Hindi/Gujarati translation)
-    english_words = ['the', 'and', 'or', 'of', 'in', 'to', 'for', 'with', 'by', 'from', 'are', 'is', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'cannot', 'price', 'market', 'data', 'note', 'range', 'modal', 'commodity', 'available', 'recent', 'latest']
-    
-    if target_language in ['hi', 'gu']:
-        translated_lower = translated_text.lower()
-        english_word_count = sum(1 for word in english_words if word in translated_lower)
-        # If more than 2 English words found in translation, consider it poor quality
-        if english_word_count > 2:
-            return False
-    
-    # Check if translation is too short compared to original
-    if len(translated_text.strip()) < len(original_text.strip()) * 0.5:
-        return False
-    
-    # Check if translation is mostly unchanged (copy of original)
-    similarity_ratio = len(set(original_text.lower().split()) & set(translated_text.lower().split())) / max(len(original_text.split()), 1)
-    if similarity_ratio > 0.8:
-        return False
-    
-    return True
-
 def translate_text(text, target_language):
    if target_language == 'en':
        return text
@@ -490,36 +464,20 @@ def translate_text(text, target_language):
        if not cleaned_text:
            return text
        
-       # Split into sentences for better translation
-       sentences = cleaned_text.split('\n')
-       translated_sentences = []
+       # Simple translation with retry logic
+       for attempt in range(3):
+           try:
+               translated = translator.translate(cleaned_text)
+               if translated and len(translated.strip()) > 0:
+                   return translated.strip()
+           except Exception as e:
+               print(f"Translation attempt {attempt + 1} error: {e}")
+               if attempt == 2:  # Last attempt
+                   break
        
-       for sentence in sentences:
-           if sentence.strip():
-               try:
-                   translated_sentence = translator.translate(sentence.strip())
-                   
-                   # Check translation quality
-                   if translated_sentence and is_translation_quality_good(sentence.strip(), translated_sentence, target_language):
-                       translated_sentences.append(translated_sentence.strip())
-                   else:
-                       # If translation quality is poor, keep original
-                       print(f"Poor translation quality for: {sentence[:50]}... Keeping original.")
-                       translated_sentences.append(sentence.strip())
-                       
-               except Exception as e:
-                   print(f"Translation failed for sentence: {sentence[:50]}... Error: {e}")
-                   # Keep original sentence if translation fails
-                   translated_sentences.append(sentence.strip())
-       
-       final_translation = '\n'.join(translated_sentences)
-       
-       # Final quality check on complete translation
-       if is_translation_quality_good(cleaned_text, final_translation, target_language):
-           return final_translation
-       else:
-           print(f"Overall translation quality poor, returning original text")
-           return text
+       # If all attempts failed, return original
+       print(f"Translation failed for: {cleaned_text[:50]}...")
+       return text
            
    except Exception as e:
        print(f"Translation error: {e}")
@@ -1433,7 +1391,6 @@ def root():
        }, 
        status=200
    )
-
 if __name__ == '__main__':
     port = find_free_port()
     
