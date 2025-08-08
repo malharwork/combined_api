@@ -726,15 +726,6 @@ def format_commodity_response(records, district, date, commodity_filter=None, la
            response += f"...और {len(records) - 5} और आइटम\n"
        else:
            response += f"...and {len(records) - 5} more items\n"
-   
-   # Simple note that translates well
-   if language == 'gu':
-       response += "\nનોંધ: તાજેતરના બજાર ભાવો"
-   elif language == 'hi':
-       response += "\nनोट: हाल के बाजार भाव"
-   else:
-       response += "\nNote: Latest market prices"
-   
    return response
 
 def is_query_allowed(text):
